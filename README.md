@@ -24,16 +24,22 @@ If the score falls below 95%, it iterates — adjusting the stack and retrying u
 - Generates tests from the task spec and output, then scores quality.
 - Retries with stack adjustments until it hits a quality threshold.
 
-## One-Minute Start
+## Prerequisites
 
-### 1) Start the engine
+- **Docker** — containers are the execution environment
+- **Python 3.11+**
+- **Go 1.22+**
+- **At least one LLM provider API key** (Anthropic, OpenAI, or Gemini)
+
+## Quickstart
+
+### 1) Set up the Python engine
 
 ```bash
 cd validtr-engine
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
-uvicorn api.server:app --host 127.0.0.1 --port 4041
 ```
 
 ### 2) Build the CLI
@@ -42,72 +48,7 @@ uvicorn api.server:app --host 127.0.0.1 --port 4041
 cd validtr-cli && go build -o ../validtr . && cd ..
 ```
 
-### 3) Run your first task
-
-```bash
-./validtr run "Build a FastAPI web app with JWT auth" --provider anthropic
-```
-
-![](images/sample.png)
-
-## Command Cheatsheet
-
-```bash
-# Standard run
-./validtr run "Build a FastAPI web app with JWT auth" --provider anthropic
-
-# Compare providers for the same task
-validtr run "Build a REST API with CRUD endpoints" --compare anthropic,openai,gemini
-
-# Recommendation only (no Docker execution)
-validtr run "Automate PR code reviews" --dry-run
-
-# MCP discovery
-validtr mcp list
-validtr mcp search "kubernetes"
-validtr mcp info filesystem
-```
-
-## Deep Dive
-
-## Prerequisites
-
-- **Docker** — containers are the execution environment
-- **At least one LLM provider API key** (Anthropic, OpenAI, or Gemini)
-
-## Quickstart
-
-1. Start the backend engine
-```
-uvicorn api.server:app --host 127.0.0.1 --port 4041
-```
-
-2. Run a task
-
-```bash
-./validtr run "Build a FastAPI web app with JWT auth" --provider anthropic
-```
-
-![](images/sample.png)
-
-## Setup
-
-### Python Engine
-
-```bash
-cd validtr-engine
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
-```
-
-### Go CLI
-
-```bash
-cd validtr-cli && go build -o ../validtr . && cd ..
-```
-
-### Configuration
+### 3) Configure API keys
 
 Set API keys as environment variables (never stored in config files):
 
@@ -128,15 +69,23 @@ timeout: 300
 engine_addr: "http://127.0.0.1:4041"
 ```
 
-## Usage
-
-### Start the engine
+### 4) Start the engine
 
 ```bash
 cd validtr-engine
 source .venv/bin/activate
 uvicorn api.server:app --host 127.0.0.1 --port 4041
 ```
+
+### 5) Run your first task
+
+```bash
+./validtr run "Build a FastAPI web app with JWT auth" --provider anthropic
+```
+
+![](images/sample.png)
+
+## Usage
 
 ### Run a task
 
@@ -167,7 +116,7 @@ validtr mcp search "kubernetes"
 validtr mcp info filesystem
 ```
 
-### Configuration
+### CLI configuration
 
 ```bash
 validtr config set provider anthropic
