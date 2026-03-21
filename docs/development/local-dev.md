@@ -19,6 +19,16 @@ cd ..
 ./validtr --help
 ```
 
+## UI Dev Loop
+
+```bash
+cd validtr-ui
+npm install
+npm run dev
+```
+
+Open `http://localhost:4040`. The Vite dev server proxies API requests to the engine at `localhost:4041`.
+
 ## Docs Dev Loop
 
 ```bash

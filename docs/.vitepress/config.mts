@@ -11,6 +11,7 @@ export default defineConfig({
     nav: [
       { text: 'Guide', link: '/getting-started/overview' },
       { text: 'Concepts', link: '/concepts/architecture' },
+      { text: 'Web UI', link: '/ui/overview' },
       { text: 'Reference', link: '/reference/cli' },
       { text: 'Development', link: '/development/local-dev' },
       { text: 'Operations', link: '/operations/troubleshooting' },
@@ -41,6 +42,17 @@ export default defineConfig({
             { text: 'Pipeline', link: '/concepts/pipeline' },
             { text: 'Scoring', link: '/concepts/scoring' },
             { text: 'Task Lifecycle', link: '/concepts/task-lifecycle' }
+          ]
+        }
+      ],
+      '/ui/': [
+        {
+          text: 'Web UI',
+          items: [
+            { text: 'Overview', link: '/ui/overview' },
+            { text: 'Setup', link: '/ui/setup' },
+            { text: 'Dashboard', link: '/ui/dashboard' },
+            { text: 'Components', link: '/ui/components' }
           ]
         }
       ],

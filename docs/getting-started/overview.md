@@ -15,4 +15,4 @@ For each run, it:
 
 - `validtr-cli`: user-facing Go CLI.
 - `validtr-engine`: Python FastAPI orchestration engine.
-- `validtr-ui`: optional UI surface (currently minimal).
+- `validtr-ui`: local web dashboard for submitting tasks, viewing results, and browsing run history. See [Web UI](/ui/overview).

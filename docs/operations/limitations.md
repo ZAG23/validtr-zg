@@ -15,7 +15,7 @@ This page reflects current implementation status.
 ## Not Yet Implemented
 
 - gRPC transport between CLI and engine (HTTP used today)
-- fully implemented UI experience (`validtr-ui` is currently minimal)
+- comparison view and MCP explorer pages in the web UI
 - dedicated scorers for infrastructure/research/automation
 - persistent run history commands in CLI
 - hosted community stack registry

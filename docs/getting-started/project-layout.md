@@ -29,4 +29,13 @@ Python FastAPI engine and orchestration pipeline.
 
 ## `validtr-ui`
 
-UI placeholder directory (`src/`) is present but not currently implemented.
+Local web dashboard built with React 19, TypeScript, and Tailwind CSS.
+
+- `src/api/`: typed API client and TypeScript types mirroring engine response shapes.
+- `src/components/`: reusable UI components (ScoreGauge, ScoreBreakdown, StackCard, RunForm, etc.).
+- `src/components/layout/`: app shell, sidebar, and navigation.
+- `src/hooks/`: data fetching hooks (useRunTask, useHealthCheck, useEngineConfig).
+- `src/pages/`: page components (Dashboard, RunDetail).
+- `src/store/`: Zustand state management with localStorage persistence.
+
+See [Web UI docs](/ui/overview) for setup and usage.

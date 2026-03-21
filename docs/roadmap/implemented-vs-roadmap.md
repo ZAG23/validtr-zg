@@ -19,7 +19,7 @@ This matrix is based on the current codebase.
 | Retry loop | Score-threshold based retries | Implemented | Model upgrade + re-search hints |
 | Dynamic MCP registry integration | Official + Smithery fallback | Implemented | 1-hour in-memory cache |
 | Dynamic skills catalogs | GitHub skills catalogs | Implemented | 1-hour in-memory cache |
-| UI application | Full local UI | Planned | `validtr-ui` is currently minimal |
+| UI application | Dashboard with run form, results, history | Implemented | Comparison view and MCP explorer planned |
 | gRPC transport | Typed CLI-engine contracts | Planned | Architecture doc mentions gRPC target |
 | Dedicated non-code scorers | Infrastructure/research/automation scorers | Planned | Currently fallback to code scorer |
 | History commands | `history` command family | Planned | Mentioned in architecture docs, not in CLI code |
