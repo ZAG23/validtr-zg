@@ -3,7 +3,6 @@ import { ScoreGauge } from "./ScoreGauge";
 import { ScoreBreakdown } from "./ScoreBreakdown";
 import { StackCard } from "./StackCard";
 import { AttemptTimeline } from "./AttemptTimeline";
-import { StatusBadge } from "./StatusBadge";
 
 export function RunResultCard({
   result,
@@ -17,12 +16,9 @@ export function RunResultCard({
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <h3 className="font-mono text-sm text-text-secondary">
-              Run #{result.run_id}
-            </h3>
-            <StatusBadge passed={result.passed} />
-          </div>
+          <h3 className="font-mono text-sm text-text-secondary">
+            Run #{result.run_id}
+          </h3>
           {task && (
             <p className="text-sm text-text-primary max-w-lg">{task}</p>
           )}
@@ -36,7 +32,7 @@ export function RunResultCard({
       {/* Score gauge + breakdown */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
         <div className="flex justify-center">
-          <ScoreGauge score={result.score} passed={result.passed} />
+          <ScoreGauge score={result.score} />
         </div>
         <ScoreBreakdown dimensions={result.dimensions} />
       </div>

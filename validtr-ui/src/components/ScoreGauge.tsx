@@ -13,11 +13,9 @@ function arcColor(score: number): string {
 
 export function ScoreGauge({
   score,
-  passed,
   size = SIZE,
 }: {
   score: number;
-  passed: boolean;
   size?: number;
 }) {
   const scale = size / SIZE;
@@ -68,11 +66,8 @@ export function ScoreGauge({
           {formatScore(score)}
         </text>
       </svg>
-      <span
-        className="font-mono text-xs font-semibold tracking-widest"
-        style={{ color: passed ? "var(--color-pass)" : "var(--color-fail)" }}
-      >
-        {passed ? "PASS" : "FAIL"}
+      <span className="font-mono text-xs text-text-muted tracking-wider">
+        / 100
       </span>
     </div>
   );
