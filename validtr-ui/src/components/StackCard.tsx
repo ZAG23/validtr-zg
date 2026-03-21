@@ -12,7 +12,7 @@ export function StackCard({ stack }: { stack: StackInfo }) {
   return (
     <div className="space-y-3">
       <h4 className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
-        Stack
+        Recommended Stack
       </h4>
 
       <div className="space-y-2">
@@ -24,15 +24,17 @@ export function StackCard({ stack }: { stack: StackInfo }) {
           </span>
         </div>
 
-        {/* Framework */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-text-muted w-16 shrink-0">
-            Framework
-          </span>
-          <span className="font-mono text-sm text-text-secondary">
-            {stack.framework ?? "Direct tool calling"}
-          </span>
-        </div>
+        {/* Framework — only show when one was recommended */}
+        {stack.framework && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-text-muted w-16 shrink-0">
+              Framework
+            </span>
+            <span className="font-mono text-sm text-text-secondary">
+              {stack.framework}
+            </span>
+          </div>
+        )}
 
         {/* MCP Servers */}
         {stack.mcp_servers.length > 0 && (
