@@ -23,9 +23,8 @@ export function RunResultCard({
             <p className="text-sm text-text-primary max-w-lg">{task}</p>
           )}
         </div>
-        <div className="text-right text-xs text-text-muted font-mono space-y-0.5">
+        <div className="text-right text-xs text-text-muted font-mono">
           <div>{result.total_attempts} attempt{result.total_attempts !== 1 ? "s" : ""}</div>
-          <div>{result.artifact_count} artifact{result.artifact_count !== 1 ? "s" : ""}</div>
         </div>
       </div>
 
@@ -54,27 +53,6 @@ export function RunResultCard({
         </>
       )}
 
-      {/* Artifacts preview */}
-      {result.artifact_count > 0 && (
-        <>
-          <div className="border-t border-border" />
-          <div className="space-y-2">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
-              Artifacts
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {Object.keys(result.artifacts).map((name) => (
-                <span
-                  key={name}
-                  className="inline-flex items-center px-2 py-1 rounded border border-border-bright bg-surface-2 font-mono text-xs text-text-secondary"
-                >
-                  {name}
-                </span>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
     </div>
   );
 }

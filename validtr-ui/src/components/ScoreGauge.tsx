@@ -23,6 +23,9 @@ export function ScoreGauge({
 
   return (
     <div className="flex flex-col items-center gap-2">
+      <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
+        Validation Score
+      </span>
       <svg
         width={size}
         height={size}

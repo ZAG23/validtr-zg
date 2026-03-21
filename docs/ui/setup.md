@@ -19,7 +19,7 @@ cd validtr-ui
 npm run dev
 ```
 
-Open **http://localhost:4040** in your browser.
+Open `http://localhost:4040` in your browser.
 
 The Vite dev server proxies API requests (`/api/*` and `/health`) to the engine at `localhost:4041` automatically, so no CORS configuration is needed during development.
 
