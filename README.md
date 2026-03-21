@@ -141,14 +141,45 @@ Notes:
 - Container/image lifecycle is managed by the Python engine.
 - Docker must be running and accessible to complete non-dry-run task execution.
 
-## UI
+## Web UI
 
-The web UI (`validtr-ui/`) is planned but not yet implemented. Coming soon.
+validtr includes a local web UI for submitting tasks, viewing results, and browsing run history.
+
+### Setup
+
+```bash
+cd validtr-ui
+npm install
+```
+
+### Run the UI
+
+Make sure the engine is running first (see step 4 above), then:
+
+```bash
+cd validtr-ui
+npm run dev
+```
+
+Open **http://localhost:4040** in your browser.
+
+The dev server proxies API requests to the engine at `localhost:4041` automatically.
+
+### Production build
+
+```bash
+cd validtr-ui
+npm run build
+```
+
+Output is written to `validtr-ui/dist/`.
 
 ## Architecture
 
 ```
 User's Machine
+├── Web UI (React @ :4040)   ← Browser-based dashboard
+│   └── HTTP ──────────────►
 ├── Go CLI (Cobra)           ← Single binary, user-facing
 │   └── HTTP ──────────────►  Python Engine (FastAPI @ :4041)
 │                               ├── Task Analyzer
@@ -184,6 +215,14 @@ validtr/
 │   └── internal/
 │       ├── engine/               # Python engine HTTP client
 │       └── config/               # YAML config + env credentials
+│
+├── validtr-ui/                   # Web UI (React + TypeScript + Tailwind)
+│   └── src/
+│       ├── api/                  # Typed API client
+│       ├── components/           # ScoreGauge, StackCard, RunForm, etc.
+│       ├── hooks/                # useRunTask, useHealthCheck
+│       ├── pages/                # Dashboard, RunDetail
+│       └── store/                # Zustand state management
 │
 ├── validtr-engine/               # Python Engine
 │   ├── api/                      # FastAPI server + routes

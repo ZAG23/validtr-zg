@@ -3,6 +3,7 @@
 import logging
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from api.routes.config import router as config_router
 from api.routes.mcp import router as mcp_router
@@ -15,6 +16,13 @@ app = FastAPI(
     title="validtr engine",
     description="Python engine for validtr — agentic stack validation",
     version="0.1.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:4040"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(run_router, prefix="/api")
