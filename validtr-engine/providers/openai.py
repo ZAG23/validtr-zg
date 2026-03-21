@@ -21,9 +21,11 @@ class OpenAIProvider(LLMProvider):
     def provider_name(self) -> str:
         return "openai"
 
-    def __init__(self, api_key: str, model: str | None = None):
+    def __init__(self, api_key: str | None = None, model: str | None = None):
         super().__init__(api_key, model)
-        self.client = openai.AsyncOpenAI(api_key=api_key)
+        self.client = openai.AsyncOpenAI(
+            **({"api_key": api_key} if api_key else {}),
+        )
 
     def _convert_messages(self, messages: list[Message]) -> list[dict]:
         """Convert our messages to OpenAI format."""

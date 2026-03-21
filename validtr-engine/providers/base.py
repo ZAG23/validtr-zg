@@ -39,7 +39,7 @@ class CompletionResponse(BaseModel):
 class LLMProvider(abc.ABC):
     """Abstract base for LLM providers."""
 
-    def __init__(self, api_key: str, model: str | None = None):
+    def __init__(self, api_key: str | None = None, model: str | None = None):
         self.api_key = api_key
         self.model = model or self.default_model
 
@@ -78,7 +78,7 @@ class LLMProvider(abc.ABC):
         )
 
 
-def get_provider(provider_name: str, api_key: str, model: str | None = None) -> LLMProvider:
+def get_provider(provider_name: str, api_key: str | None = None, model: str | None = None) -> LLMProvider:
     """Factory function to get a provider by name."""
     from providers.anthropic import AnthropicProvider
     from providers.gemini import GeminiProvider

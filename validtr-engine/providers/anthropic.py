@@ -20,9 +20,13 @@ class AnthropicProvider(LLMProvider):
     def provider_name(self) -> str:
         return "anthropic"
 
-    def __init__(self, api_key: str, model: str | None = None):
+    def __init__(self, api_key: str | None = None, model: str | None = None):
         super().__init__(api_key, model)
-        self.client = anthropic.AsyncAnthropic(api_key=api_key)
+        # Pass api_key only if explicitly provided; otherwise the SDK
+        # falls back to the ANTHROPIC_API_KEY environment variable.
+        self.client = anthropic.AsyncAnthropic(
+            **({"api_key": api_key} if api_key else {}),
+        )
 
     def _convert_messages(self, messages: list[Message]) -> tuple[str | None, list[dict]]:
         """Convert our messages to Anthropic format. Returns (system, messages)."""

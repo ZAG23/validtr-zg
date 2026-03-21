@@ -6,6 +6,12 @@ import type { RunRequest } from "@/api/types";
 
 const PROVIDERS = ["anthropic", "openai", "gemini"];
 
+const PROVIDER_ENV_VARS: Record<string, string> = {
+  anthropic: "ANTHROPIC_API_KEY",
+  openai: "OPENAI_API_KEY",
+  gemini: "GOOGLE_API_KEY",
+};
+
 export function RunForm() {
   const { execute, cancel, isRunning, error } = useRunTask();
   const engineOnline = useStore((s) => s.engineOnline);
@@ -13,6 +19,7 @@ export function RunForm() {
 
   const [task, setTask] = useState("");
   const [provider, setProvider] = useState("anthropic");
+  const [apiKey, setApiKey] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [model, setModel] = useState("");
   const [maxRetries, setMaxRetries] = useState(1);
@@ -43,6 +50,7 @@ export function RunForm() {
         provider,
         dry_run: dryRun,
       };
+      if (apiKey.trim()) req.api_key = apiKey.trim();
       if (model.trim()) req.model = model.trim();
       if (maxRetries !== 1) req.max_retries = maxRetries;
       if (scoreThreshold !== 90) req.score_threshold = scoreThreshold;
@@ -50,7 +58,7 @@ export function RunForm() {
 
       void execute(req);
     },
-    [task, provider, model, maxRetries, scoreThreshold, timeout, dryRun, isRunning, execute],
+    [task, provider, apiKey, model, maxRetries, scoreThreshold, timeout, dryRun, isRunning, execute],
   );
 
   const formatElapsed = (s: number) => {
@@ -72,7 +80,7 @@ export function RunForm() {
         />
       </div>
 
-      {/* Provider + Submit row */}
+      {/* API key + Provider row */}
       <div className="flex items-center gap-3">
         <select
           value={provider}
@@ -86,6 +94,17 @@ export function RunForm() {
           ))}
         </select>
 
+        <input
+          type="password"
+          value={apiKey}
+          onChange={(e) => setApiKey(e.target.value)}
+          placeholder={`API key (or set ${PROVIDER_ENV_VARS[provider] ?? "env var"} on engine)`}
+          className="flex-1 bg-surface-1 border border-border rounded-lg px-3 py-2 font-mono text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent/50"
+        />
+      </div>
+
+      {/* Submit row */}
+      <div className="flex items-center gap-3">
         <button
           type="submit"
           disabled={!task.trim() || isRunning || !engineOnline}

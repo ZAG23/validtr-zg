@@ -1,6 +1,7 @@
 """Run task API routes."""
 
 import logging
+import os
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -9,6 +10,12 @@ from analyzer.task_analyzer import TaskAnalyzer
 from orchestrator import run_task
 from providers.base import get_provider
 from recommender.engine import RecommendationEngine
+
+PROVIDER_ENV_VARS = {
+    "anthropic": "ANTHROPIC_API_KEY",
+    "openai": "OPENAI_API_KEY",
+    "gemini": "GOOGLE_API_KEY",
+}
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -75,15 +82,28 @@ async def api_run_task(req: RunRequest):
             detail=f"Unknown provider: {req.provider}. Choose from: {sorted(valid_providers)}",
         )
 
+    # Resolve API key: request body > environment variable
+    api_key = req.api_key
+    if not api_key:
+        env_var = PROVIDER_ENV_VARS.get(req.provider, "")
+        api_key = os.environ.get(env_var, "") if env_var else ""
+
+    if not api_key:
+        env_var = PROVIDER_ENV_VARS.get(req.provider, f"<PROVIDER>_API_KEY")
+        raise HTTPException(
+            status_code=401,
+            detail=f"No API key for {req.provider}. Pass it in the request or set {env_var} in the engine environment.",
+        )
+
     if req.dry_run:
-        return await _dry_run(req)
+        return await _dry_run(req, api_key=api_key)
 
     try:
         result = await run_task(
             task=req.task,
             provider=req.provider,
             model=req.model,
-            api_key=req.api_key,
+            api_key=api_key,
             search_api_key=req.search_api_key,
             max_retries=req.max_retries,
             score_threshold=req.score_threshold,
@@ -91,6 +111,10 @@ async def api_run_task(req: RunRequest):
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+    except TypeError as e:
+        if "authentication" in str(e).lower() or "api_key" in str(e).lower():
+            raise HTTPException(status_code=401, detail=f"Authentication failed: {e}") from e
+        raise
     except Exception as e:
         err_type = type(e).__name__
         if "Authentication" in err_type or "AuthError" in err_type:
@@ -161,10 +185,10 @@ async def api_run_task(req: RunRequest):
     )
 
 
-async def _dry_run(req: RunRequest):
+async def _dry_run(req: RunRequest, api_key: str = ""):
     """Recommend a stack without executing."""
     try:
-        llm = get_provider(req.provider, api_key=req.api_key or "", model=req.model)
+        llm = get_provider(req.provider, api_key=api_key, model=req.model)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 

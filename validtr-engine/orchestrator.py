@@ -39,7 +39,7 @@ async def run_task(
     logger.info("Starting validtr run %s: %s", run_id, task[:80])
 
     # Initialize the LLM provider (used for analysis, recommendation, test gen, scoring)
-    llm = get_provider(provider, api_key=api_key or "", model=model)
+    llm = get_provider(provider, api_key=api_key, model=model)
 
     # Build API keys dict for container injection
     api_keys = dict(extra_api_keys or {})

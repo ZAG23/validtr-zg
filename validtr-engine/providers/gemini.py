@@ -22,9 +22,11 @@ class GeminiProvider(LLMProvider):
     def provider_name(self) -> str:
         return "gemini"
 
-    def __init__(self, api_key: str, model: str | None = None):
+    def __init__(self, api_key: str | None = None, model: str | None = None):
         super().__init__(api_key, model)
-        self.client = genai.Client(api_key=api_key)
+        self.client = genai.Client(
+            **({"api_key": api_key} if api_key else {}),
+        )
 
     def _convert_messages(self, messages: list[Message]) -> tuple[str | None, list[types.Content]]:
         """Convert messages to Gemini format. Returns (system_instruction, contents)."""
