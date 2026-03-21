@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class RetryController:
     """Decides whether to retry and how to adjust the stack."""
 
-    def __init__(self, max_retries: int = 3, threshold: float = 95.0):
+    def __init__(self, max_retries: int = 1, threshold: float = 90.0):
         self.max_retries = max_retries
         self.threshold = threshold
         self.attempts: list[AttemptResult] = []

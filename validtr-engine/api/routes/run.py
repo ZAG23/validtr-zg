@@ -20,8 +20,8 @@ class RunRequest(BaseModel):
     model: str | None = None
     api_key: str | None = None
     search_api_key: str | None = None
-    max_retries: int = 3
-    score_threshold: float = 95.0
+    max_retries: int = 1
+    score_threshold: float = 90.0
     timeout: int = 300
     dry_run: bool = False
 

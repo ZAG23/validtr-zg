@@ -4,7 +4,7 @@ import asyncio
 import logging
 
 from models.stack import StackRecommendation
-from models.task import TaskDefinition
+from models.task import Complexity, TaskDefinition, TaskType
 from providers.base import LLMProvider
 from recommender.llm_reasoning import LLMReasoningEngine
 from recommender.mcp_registry import MCPRegistryClient
@@ -12,6 +12,39 @@ from recommender.skills_registry import SkillsRegistryClient
 from recommender.web_search import WebSearchProvider
 
 logger = logging.getLogger(__name__)
+_REGISTRY_HINTS = {
+    "api",
+    "auth0",
+    "aws",
+    "azure",
+    "browser",
+    "cloud",
+    "database",
+    "deploy",
+    "docker",
+    "filesystem",
+    "github",
+    "gitlab",
+    "google",
+    "integration",
+    "jira",
+    "k8s",
+    "kubernetes",
+    "mcp",
+    "mongodb",
+    "mysql",
+    "oauth",
+    "postgres",
+    "redis",
+    "repo",
+    "repository",
+    "scrape",
+    "search",
+    "slack",
+    "sql",
+    "terraform",
+}
+_MAX_SKILLS_FOR_PROMPT = 12
 
 
 class RecommendationEngine:
@@ -43,12 +76,19 @@ class RecommendationEngine:
         # Build a task-specific MCP query from the task metadata
         mcp_query = f"{task.type.value} {task.domain} {frameworks}".strip()
 
-        # Fetch in parallel: web search, relevant MCP servers, all skills
-        web_results, relevant_mcp, all_skills = await asyncio.gather(
-            self.web_search.search(search_query),
-            self.mcp_registry.get_relevant(mcp_query, limit=50),
-            self.skills_registry.get_all(),
-        )
+        fetch_registries = _should_fetch_registries(task)
+        if fetch_registries:
+            web_results, relevant_mcp, all_skills = await asyncio.gather(
+                self.web_search.search(search_query),
+                self.mcp_registry.get_relevant(mcp_query, limit=20),
+                self.skills_registry.get_all(),
+            )
+            all_skills = _trim_skills_for_prompt(task, all_skills)
+        else:
+            logger.info("Skipping MCP and skills registry fetch for straightforward code-generation task")
+            web_results = await self.web_search.search(search_query)
+            relevant_mcp = []
+            all_skills = []
 
         logger.info(
             "Web search: %d results, MCP servers: %d relevant, Skills catalog: %d skills",
@@ -103,3 +143,51 @@ class RecommendationEngine:
                     )
 
         return all_servers
+
+
+def _should_fetch_registries(task: TaskDefinition) -> bool:
+    """Return True when registry lookups are likely to change the runtime stack."""
+    if task.type != TaskType.CODE_GENERATION:
+        return True
+    if task.complexity == Complexity.COMPLEX:
+        return True
+
+    hint_text = " ".join([
+        task.raw_input,
+        task.domain,
+        " ".join(task.requirements.frameworks),
+        " ".join(task.requirements.capabilities),
+    ]).lower()
+    return any(hint in hint_text for hint in _REGISTRY_HINTS)
+
+
+def _trim_skills_for_prompt(task: TaskDefinition, skills: list[dict]) -> list[dict]:
+    """Keep only the most relevant skills so the prompt stays small."""
+    if not skills:
+        return []
+
+    terms = {
+        term
+        for term in (
+            [task.domain, task.raw_input, *task.requirements.frameworks, *task.requirements.capabilities]
+        )
+        for term in str(term).lower().replace("/", " ").replace("-", " ").split()
+        if len(term) >= 3
+    }
+
+    scored: list[tuple[int, dict]] = []
+    for skill in skills:
+        name = str(skill.get("name", "")).lower()
+        desc = str(skill.get("description", "")).lower()
+        score = 0
+        if any(term in name for term in terms):
+            score += 5
+        score += sum(2 for term in terms if term in desc)
+        if score > 0:
+            scored.append((score, skill))
+
+    if not scored:
+        return skills[:_MAX_SKILLS_FOR_PROMPT]
+
+    scored.sort(key=lambda item: item[0], reverse=True)
+    return [skill for _, skill in scored[:_MAX_SKILLS_FOR_PROMPT]]

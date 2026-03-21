@@ -45,8 +45,8 @@ func resolveConfigPath() (string, error) {
 func DefaultConfig() *Config {
 	return &Config{
 		Provider:       "anthropic",
-		ScoreThreshold: 95.0,
-		MaxRetries:     3,
+		ScoreThreshold: 90.0,
+		MaxRetries:     1,
 		Timeout:        300,
 		EngineAddr:     "http://127.0.0.1:4041",
 	}

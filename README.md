@@ -141,6 +141,10 @@ Notes:
 - Container/image lifecycle is managed by the Python engine.
 - Docker must be running and accessible to complete non-dry-run task execution.
 
+## UI
+
+The web UI (`validtr-ui/`) is planned but not yet implemented. Coming soon.
+
 ## Architecture
 
 ```

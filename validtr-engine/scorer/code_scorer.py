@@ -11,6 +11,9 @@ from providers.base import LLMProvider, Message
 from scorer.prompts import COMPLETENESS_JUDGE_SYSTEM, COMPLETENESS_JUDGE_USER
 
 logger = logging.getLogger(__name__)
+_MAX_JUDGE_FILES = 6
+_MAX_JUDGE_CHARS_PER_FILE = 1000
+_MAX_JUDGE_TOTAL_CHARS = 6000
 
 # Code task weights
 TEST_PASSING_WEIGHT = 40
@@ -63,7 +66,7 @@ class CodeScorer:
         ))
 
         # 4. Completeness (20%) — LLM-as-judge
-        completeness_score = await self._judge_completeness(task, execution)
+        completeness_score = await self.judge_completeness(task, execution)
         dimensions.append(DimensionScore(
             name="Completeness",
             score=completeness_score,
@@ -104,16 +107,65 @@ class CodeScorer:
         ratio = valid / len(python_files) if python_files else 0
         return ratio * SYNTAX_WEIGHT
 
-    async def _judge_completeness(
+    async def score_with_precomputed_completeness(
+        self,
+        task: TaskDefinition,
+        execution: ExecutionResult,
+        test_results: TestSuiteResult,
+        completeness_score: float,
+        threshold: float = 95.0,
+    ) -> ScoreResult:
+        """Compute composite score using a pre-computed completeness score."""
+        dimensions = []
+
+        test_score = test_results.pass_rate * TEST_PASSING_WEIGHT
+        dimensions.append(DimensionScore(
+            name="Test passing",
+            score=test_score,
+            max_score=TEST_PASSING_WEIGHT,
+            details=f"{test_results.passed}/{test_results.total} tests passed",
+        ))
+
+        exec_score = EXECUTION_WEIGHT if execution.success else 0
+        dimensions.append(DimensionScore(
+            name="Execution",
+            score=exec_score,
+            max_score=EXECUTION_WEIGHT,
+            details="Execution succeeded" if execution.success else f"Failed: {execution.error}",
+        ))
+
+        syntax_score = self._check_syntax(execution.artifacts)
+        dimensions.append(DimensionScore(
+            name="Syntax validity",
+            score=syntax_score,
+            max_score=SYNTAX_WEIGHT,
+            details="Syntax check on output files",
+        ))
+
+        dimensions.append(DimensionScore(
+            name="Completeness",
+            score=completeness_score,
+            max_score=COMPLETENESS_WEIGHT,
+            details="LLM judge assessment",
+        ))
+
+        composite = sum(d.score for d in dimensions)
+        result = ScoreResult(
+            composite_score=composite,
+            dimensions=dimensions,
+            threshold=threshold,
+        )
+        result.check_passed()
+        logger.info("Score: %.1f/100 (%s)", composite, "PASS" if result.passed else "FAIL")
+        return result
+
+    async def judge_completeness(
         self,
         task: TaskDefinition,
         execution: ExecutionResult,
     ) -> float:
         """Use LLM-as-judge to assess completeness."""
-        artifact_summary = ""
-        for name, content in execution.artifacts.items():
-            truncated = content[:1500] if len(content) > 1500 else content
-            artifact_summary += f"\n--- {name} ---\n{truncated}\n"
+        artifact_summary = _summarize_artifacts_for_judge(execution.artifacts)
 
         messages = [
             Message(role="system", content=COMPLETENESS_JUDGE_SYSTEM),
@@ -135,3 +187,24 @@ class CodeScorer:
         except Exception as e:
             logger.warning("Completeness judge failed: %s, defaulting to 50%%", e)
             return COMPLETENESS_WEIGHT * 0.5
+
+
+def _summarize_artifacts_for_judge(artifacts: dict[str, str]) -> str:
+    """Bound artifact content so the completeness judge stays fast."""
+    if not artifacts:
+        return "No artifacts"
+
+    parts: list[str] = []
+    total_chars = 0
+
+    for name in sorted(artifacts)[:_MAX_JUDGE_FILES]:
+        remaining = _MAX_JUDGE_TOTAL_CHARS - total_chars
+        if remaining <= 0:
+            break
+
+        content = artifacts[name]
+        truncated = content[: min(_MAX_JUDGE_CHARS_PER_FILE, remaining)]
+        parts.append(f"\n--- {name} ---\n{truncated}\n")
+        total_chars += len(truncated)
+
+    return "".join(parts) or "No artifacts"

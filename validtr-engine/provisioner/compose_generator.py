@@ -183,11 +183,13 @@ if __name__ == "__main__":
 
     def _write_agent_loop(self, run_dir: str, stack: StackRecommendation) -> None:
         """Write the agent loop script that runs inside the container."""
-        agent_loop = '''"""Simple tool-calling agent loop for validtr."""
+        agent_loop = '''"""Single-shot code generation agent for validtr."""
 import json
 import os
-import subprocess
+import re
 import sys
+
+FILE_PATTERN = r'--- FILE: (.+?) ---\\n(.*?)\\n--- END FILE ---'
 
 def get_llm_client():
     """Initialize the LLM client based on environment."""
@@ -210,199 +212,110 @@ def get_llm_client():
         raise ValueError(f"Unknown provider: {provider}")
 
 def run_agent(task: dict, stack: dict):
-    """Run the agent loop to completion."""
+    """Run single-shot code generation."""
     client, model, provider = get_llm_client()
+    framework_name = (stack.get("framework") or {}).get("name") or "none"
+    prompt_strategy = stack.get("prompt_strategy") or "Implement the minimum working solution first, then refine details."
+    skills = ", ".join(stack.get("skills", [])) or "none"
 
     system_prompt = f"""You are an AI agent tasked with completing a software engineering task.
-You must produce working output files in /workspace/output/.
+You must produce working output files.
 
 Task: {task.get('raw_input', '')}
 
 Success Criteria:
 {chr(10).join('- ' + c for c in task.get('success_criteria', []))}
 
-Write all output files to /workspace/output/. Create the directory if it doesn't exist.
-When done, write a manifest.json to /workspace/output/manifest.json listing all files you created."""
+Recommended framework: {framework_name}
+Recommended skills: {skills}
+Execution strategy: {prompt_strategy}
+
+Output ALL files in this exact format (one block per file):
+
+--- FILE: path/to/file ---
+file content here
+--- END FILE ---
+
+Include a manifest.json listing all files you created.
+Generate ALL files in a single response. Do not explain — just output the file blocks."""
 
     os.makedirs("/workspace/output", exist_ok=True)
 
-    # Simple agent loop (no MCP for Phase 1 — direct code generation)
     if provider == "anthropic":
-        _run_anthropic_loop(client, model, system_prompt, task)
+        text = _generate_anthropic(client, model, system_prompt, task)
     elif provider == "openai":
-        _run_openai_loop(client, model, system_prompt, task)
+        text = _generate_openai(client, model, system_prompt, task)
     elif provider == "gemini":
-        _run_gemini_loop(client, model, system_prompt, task)
+        text = _generate_gemini(client, model, system_prompt, task)
+    else:
+        text = ""
 
-def _run_anthropic_loop(client, model, system_prompt, task):
-    """Run agent loop with Anthropic."""
-    tools = [
-        {
-            "name": "write_file",
-            "description": "Write content to a file in /workspace/output/",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "path": {"type": "string", "description": "Relative path within /workspace/output/"},
-                    "content": {"type": "string", "description": "File content"},
-                },
-                "required": ["path", "content"],
-            },
-        },
-        {
-            "name": "run_command",
-            "description": "Run a shell command and return output",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "command": {"type": "string", "description": "Shell command to run"},
-                },
-                "required": ["command"],
-            },
-        },
-    ]
+    _parse_and_write_files(text)
 
-    messages = [{"role": "user", "content": f"Complete this task: {task.get('raw_input', '')}"}]
+def _generate_anthropic(client, model, system_prompt, task):
+    """Single-shot generation with Anthropic."""
+    response = client.messages.create(
+        model=model,
+        system=system_prompt,
+        messages=[{"role": "user", "content": f"Complete this task: {task.get('raw_input', '')}"}],
+        max_tokens=12288,
+    )
+    text = ""
+    for block in response.content:
+        if hasattr(block, "text"):
+            text += block.text
+    print("[validtr] Agent completed task (single-shot)")
+    return text
 
-    for i in range(50):  # max 50 LLM calls
-        response = client.messages.create(
-            model=model,
-            system=system_prompt,
-            messages=messages,
-            tools=tools,
-            max_tokens=4096,
-        )
+def _generate_openai(client, model, system_prompt, task):
+    """Single-shot generation with OpenAI."""
+    response = client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"Complete this task: {task.get('raw_input', '')}"},
+        ],
+        max_tokens=12288,
+    )
+    text = response.choices[0].message.content or ""
+    print("[validtr] Agent completed task (single-shot)")
+    return text
 
-        # Process response
-        assistant_content = response.content
-        messages.append({"role": "assistant", "content": assistant_content})
-
-        if response.stop_reason == "end_turn":
-            print("[validtr] Agent completed task")
-            break
-
-        # Handle tool calls
-        tool_results = []
-        for block in assistant_content:
-            if block.type == "tool_use":
-                result = _handle_tool_call(block.name, block.input)
-                tool_results.append({
-                    "type": "tool_result",
-                    "tool_use_id": block.id,
-                    "content": result,
-                })
-
-        if tool_results:
-            messages.append({"role": "user", "content": tool_results})
-        else:
-            break
-
-def _run_openai_loop(client, model, system_prompt, task):
-    """Run agent loop with OpenAI."""
-    tools = [
-        {
-            "type": "function",
-            "function": {
-                "name": "write_file",
-                "description": "Write content to a file in /workspace/output/",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "path": {"type": "string"},
-                        "content": {"type": "string"},
-                    },
-                    "required": ["path", "content"],
-                },
-            },
-        },
-        {
-            "type": "function",
-            "function": {
-                "name": "run_command",
-                "description": "Run a shell command",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "command": {"type": "string"},
-                    },
-                    "required": ["command"],
-                },
-            },
-        },
-    ]
-
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": f"Complete this task: {task.get('raw_input', '')}"},
-    ]
-
-    for i in range(50):
-        response = client.chat.completions.create(
-            model=model, messages=messages, tools=tools, max_tokens=4096,
-        )
-        choice = response.choices[0]
-        messages.append(choice.message)
-
-        if choice.finish_reason != "tool_calls":
-            print("[validtr] Agent completed task")
-            break
-
-        for tc in choice.message.tool_calls or []:
-            args = json.loads(tc.function.arguments)
-            result = _handle_tool_call(tc.function.name, args)
-            messages.append({"role": "tool", "tool_call_id": tc.id, "content": result})
-
-def _run_gemini_loop(client, model, system_prompt, task):
-    """Run agent loop with Gemini (simplified — no tool calling)."""
+def _generate_gemini(client, model, system_prompt, task):
+    """Single-shot generation with Gemini."""
     from google.genai import types
-
     response = client.models.generate_content(
         model=model,
-        contents=[f"{system_prompt}\\n\\nTask: {task.get('raw_input', '')}\\n\\nGenerate all necessary code files. For each file, output it in this format:\\n--- FILE: path/to/file ---\\ncontent\\n--- END FILE ---"],
-        config=types.GenerateContentConfig(max_output_tokens=8192),
+        contents=[f"{system_prompt}\\n\\nTask: {task.get('raw_input', '')}"],
+        config=types.GenerateContentConfig(max_output_tokens=12288),
     )
-
-    # Parse file blocks from response
     text = response.text or ""
-    import re
-    file_blocks = re.findall(r'--- FILE: (.+?) ---\\n(.*?)\\n--- END FILE ---', text, re.DOTALL)
+    print("[validtr] Agent completed task (single-shot)")
+    return text
+
+def _parse_and_write_files(text):
+    """Parse structured file blocks and write them to /workspace/output/."""
+    file_blocks = re.findall(FILE_PATTERN, text, re.DOTALL)
     for path, content in file_blocks:
-        _handle_tool_call("write_file", {"path": path.strip(), "content": content})
+        _write_file(path.strip(), content)
 
     if not file_blocks:
-        # Write raw output as a single file
-        _handle_tool_call("write_file", {"path": "output.py", "content": text})
+        print("[validtr] No file blocks found, writing raw output")
+        _write_file("output.py", text)
 
-def _handle_tool_call(name: str, args: dict) -> str:
-    """Handle a tool call from the agent."""
-    if name == "write_file":
-        path = args.get("path", "output.txt")
-        content = args.get("content", "")
-        base_dir = os.path.realpath("/workspace/output")
-        full_path = os.path.realpath(os.path.join(base_dir, path))
-        if not full_path.startswith(base_dir + os.sep) and full_path != base_dir:
-            print(f"[validtr] BLOCKED path traversal attempt: {path}")
-            return f"Error: path '{path}' escapes output directory"
-        os.makedirs(os.path.dirname(full_path), exist_ok=True)
-        with open(full_path, "w") as f:
-            f.write(content)
-        print(f"[validtr] Wrote file: {path}")
-        return f"File written: {path}"
-    elif name == "run_command":
-        command = args.get("command", "echo hello")
-        try:
-            result = subprocess.run(
-                command, shell=True, capture_output=True, text=True, timeout=30,
-                cwd="/workspace/output",
-            )
-            output = result.stdout + result.stderr
-            return output[:2000]  # Truncate long output
-        except subprocess.TimeoutExpired:
-            return "Command timed out after 30 seconds"
-        except Exception as e:
-            return f"Command failed: {e}"
-    else:
-        return f"Unknown tool: {name}"
+    print(f"[validtr] Wrote {len(file_blocks)} files")
+
+def _write_file(path: str, content: str) -> None:
+    """Write a file to /workspace/output/ with path traversal protection."""
+    base_dir = os.path.realpath("/workspace/output")
+    full_path = os.path.realpath(os.path.join(base_dir, path))
+    if not full_path.startswith(base_dir + os.sep) and full_path != base_dir:
+        print(f"[validtr] BLOCKED path traversal attempt: {path}")
+        return
+    os.makedirs(os.path.dirname(full_path), exist_ok=True)
+    with open(full_path, "w") as f:
+        f.write(content)
+    print(f"[validtr] Wrote file: {path}")
 '''
         with open(os.path.join(run_dir, "agent_loop.py"), "w") as f:
             f.write(agent_loop)

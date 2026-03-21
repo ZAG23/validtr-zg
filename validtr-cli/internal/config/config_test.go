@@ -14,11 +14,11 @@ func TestDefaultConfig(t *testing.T) {
 	if cfg.Provider != "anthropic" {
 		t.Errorf("expected default provider %q, got %q", "anthropic", cfg.Provider)
 	}
-	if cfg.ScoreThreshold != 95.0 {
-		t.Errorf("expected default score threshold 95.0, got %f", cfg.ScoreThreshold)
+	if cfg.ScoreThreshold != 90.0 {
+		t.Errorf("expected default score threshold 90.0, got %f", cfg.ScoreThreshold)
 	}
-	if cfg.MaxRetries != 3 {
-		t.Errorf("expected default max retries 3, got %d", cfg.MaxRetries)
+	if cfg.MaxRetries != 1 {
+		t.Errorf("expected default max retries 1, got %d", cfg.MaxRetries)
 	}
 	if cfg.Timeout != 300 {
 		t.Errorf("expected default timeout 300, got %d", cfg.Timeout)

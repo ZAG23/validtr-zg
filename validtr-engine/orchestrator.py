@@ -1,6 +1,8 @@
 """Top-level orchestrator — chains all components into the full pipeline."""
 
+import asyncio
 import logging
+import time
 import uuid
 
 from analyzer.task_analyzer import TaskAnalyzer
@@ -21,8 +23,8 @@ async def run_task(
     provider: str = "anthropic",
     api_key: str | None = None,
     model: str | None = None,
-    max_retries: int = 3,
-    score_threshold: float = 95.0,
+    max_retries: int = 1,
+    score_threshold: float = 90.0,
     timeout: int = 300,
     search_api_key: str | None = None,
     extra_api_keys: dict[str, str] | None = None,
@@ -33,6 +35,7 @@ async def run_task(
         FinalResult with the best stack recommendation, score, and attempt history.
     """
     run_id = uuid.uuid4().hex[:6]
+    run_start = time.perf_counter()
     logger.info("Starting validtr run %s: %s", run_id, task[:80])
 
     # Initialize the LLM provider (used for analysis, recommendation, test gen, scoring)
@@ -48,17 +51,21 @@ async def run_task(
 
     # === Step 1: Analyze task ===
     logger.info("[1/7] Analyzing task...")
+    analyze_start = time.perf_counter()
     analyzer = TaskAnalyzer(provider=llm)
     task_def = await analyzer.analyze(task)
+    logger.info("[1/7] Analysis completed in %.2fs", time.perf_counter() - analyze_start)
     logger.info("Task type: %s, complexity: %s, %d assertions", task_def.type, task_def.complexity, len(task_def.testable_assertions))
 
     # === Step 2: Recommend stack ===
     logger.info("[2/7] Generating recommendation...")
+    recommend_start = time.perf_counter()
     recommender = RecommendationEngine(
         provider=llm,
         search_api_key=search_api_key,
     )
     stack = await recommender.recommend(task_def, preferred_provider=provider)
+    logger.info("[2/7] Recommendation completed in %.2fs", time.perf_counter() - recommend_start)
     logger.info("Recommended: %s/%s", stack.llm.provider, stack.llm.model)
 
     # Initialize retry controller
@@ -74,30 +81,55 @@ async def run_task(
     while True:
         attempt += 1
         logger.info("=== Attempt %d ===", attempt)
+        attempt_start = time.perf_counter()
 
-        # === Step 3: Provision & Execute ===
+        # === Step 3+4: Provision & Execute ===
         logger.info("[3/7] Provisioning containers...")
         attempt_run_id = f"{run_id}-{attempt}"
 
         logger.info("[4/7] Executing task...")
-        execution = await executor.execute(
-            run_id=attempt_run_id,
-            task=task_def,
-            stack=stack,
-            api_keys=api_keys,
-        )
+        execute_start = time.perf_counter()
+        if stack.mcp_servers:
+            execution = await executor.execute(
+                run_id=attempt_run_id,
+                task=task_def,
+                stack=stack,
+                api_keys=api_keys,
+            )
+        else:
+            logger.info("[4/7] Using direct execution fast path (no MCP servers)")
+            execution = await executor.execute_direct(
+                run_id=attempt_run_id,
+                task=task_def,
+                stack=stack,
+                provider=llm,
+            )
+        logger.info("[4/7] Execution completed in %.2fs", time.perf_counter() - execute_start)
 
         if not execution.success:
             logger.warning("Execution failed: %s", execution.error)
 
-        # === Step 5: Generate & run tests ===
-        logger.info("[5/7] Generating tests...")
-        test_results = await test_gen.generate_and_run(task_def, execution)
+        # === Steps 5+6: Generate tests + judge completeness in parallel ===
+        logger.info("[5/7] Generating tests + judging completeness (parallel)...")
+        generation_start = time.perf_counter()
+        test_code, completeness_score = await asyncio.gather(
+            test_gen.generate_tests(task_def, execution),
+            scoring.judge_completeness(task_def, execution),
+        )
+        logger.info("[5/7] Test generation + completeness completed in %.2fs", time.perf_counter() - generation_start)
+
+        logger.info("[5/7] Running generated tests...")
+        test_run_start = time.perf_counter()
+        test_results = await test_gen.write_and_run_tests(test_code, execution)
+        logger.info("[5/7] Test execution completed in %.2fs", time.perf_counter() - test_run_start)
         logger.info("Tests: %d/%d passed", test_results.passed, test_results.total)
 
-        # === Step 6: Score ===
-        logger.info("[6/7] Scoring...")
-        score = await scoring.score(task_def, execution, test_results, score_threshold)
+        logger.info("[6/7] Computing final score...")
+        score_start = time.perf_counter()
+        score = await scoring.score_with_precomputed_completeness(
+            task_def, execution, test_results, completeness_score, score_threshold
+        )
+        logger.info("[6/7] Scoring completed in %.2fs", time.perf_counter() - score_start)
         logger.info("Score: %.1f/100", score.composite_score)
 
         # Record attempt
@@ -112,6 +144,7 @@ async def run_task(
 
         # === Step 7: Retry? ===
         if not retry_ctrl.should_retry(score, attempt):
+            logger.info("Attempt %d finished in %.2fs", attempt, time.perf_counter() - attempt_start)
             break
 
         logger.info("[7/7] Analyzing failures and adjusting stack...")
@@ -135,6 +168,7 @@ async def run_task(
                     logger.info("Added MCP server: %s", server.name)
 
         stack = adjusted_stack
+        logger.info("Attempt %d finished in %.2fs", attempt, time.perf_counter() - attempt_start)
 
     # Get best result
     best = retry_ctrl.get_best_attempt()
@@ -159,8 +193,9 @@ async def run_task(
         )
 
     logger.info(
-        "Run %s complete: best stack=%s/%s, score=%.1f, attempts=%d",
+        "Run %s complete in %.2fs: best stack=%s/%s, score=%.1f, attempts=%d",
         run_id,
+        time.perf_counter() - run_start,
         best_result.stack.provider,
         best_result.stack.model,
         best_result.score,

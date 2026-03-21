@@ -57,8 +57,8 @@ func init() {
 	runCmd.Flags().StringVar(&runCompare, "compare", "", "Compare across providers (comma-separated)")
 	runCmd.Flags().BoolVar(&runDryRun, "dry-run", false, "Recommend a stack but don't execute")
 	runCmd.Flags().StringVar(&runModel, "model", "", "Specific model to use")
-	runCmd.Flags().IntVar(&runMaxRetries, "max-retries", 3, "Maximum retry attempts")
-	runCmd.Flags().Float64Var(&runScoreThreshold, "score-threshold", 95.0, "Minimum passing score (0-100)")
+	runCmd.Flags().IntVar(&runMaxRetries, "max-retries", 1, "Maximum retry attempts")
+	runCmd.Flags().Float64Var(&runScoreThreshold, "score-threshold", 90.0, "Minimum passing score (0-100)")
 	runCmd.Flags().IntVar(&runTimeout, "timeout", 300, "Execution timeout in seconds")
 }
 

@@ -1,8 +1,9 @@
-"""Execution Engine — runs tasks inside Docker containers."""
+"""Execution Engine — runs tasks inside Docker containers or directly."""
 
 import json
 import logging
 import os
+import re
 import time
 
 import docker
@@ -13,8 +14,11 @@ from executor.trace import TraceCollector
 from models.result import ExecutionResult
 from models.stack import MCPTransport, StackRecommendation
 from models.task import TaskDefinition
+from providers.base import LLMProvider, Message
 from provisioner.compose_generator import ComposeGenerator
 from provisioner.credentials import resolve_credentials
+
+_FILE_PATTERN = re.compile(r'--- FILE: (.+?) ---\n(.*?)\n--- END FILE ---', re.DOTALL)
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +33,15 @@ class ExecutionEngine:
     ):
         self.safety = safety_limits or SafetyLimits()
         self.compose_gen = ComposeGenerator(output_base=output_base)
-        self.docker_client = get_docker_client()
-        ensure_base_images(self.docker_client)
+        self._docker_client = None
+
+    @property
+    def docker_client(self):
+        """Lazily initialize Docker client (only needed for container execution)."""
+        if self._docker_client is None:
+            self._docker_client = get_docker_client()
+            ensure_base_images(self._docker_client)
+        return self._docker_client
 
     async def execute(
         self,
@@ -85,6 +96,111 @@ class ExecutionEngine:
             return ExecutionResult(
                 run_id=run_id,
                 trace=execution_trace,
+                success=False,
+                error=str(e),
+            )
+
+    async def execute_direct(
+        self,
+        run_id: str,
+        task: TaskDefinition,
+        stack: StackRecommendation,
+        provider: LLMProvider,
+    ) -> ExecutionResult:
+        """Execute a task directly via LLM (no Docker). Single-shot generation."""
+        trace = TraceCollector()
+        logger.info("Starting direct execution for run %s", run_id)
+
+        output_base = self.compose_gen.output_base
+        run_dir = os.path.join(output_base, run_id)
+        output_dir = os.path.join(run_dir, "workspace", "output")
+        os.makedirs(output_dir, exist_ok=True)
+
+        try:
+            criteria = "\n".join(f"- {c}" for c in task.success_criteria)
+            strategy = stack.prompt_strategy.strip() or "Implement the minimum working solution first, then refine details."
+            framework = stack.framework.name or "none"
+            skills = ", ".join(stack.skills) if stack.skills else "none"
+            system_prompt = (
+                "You are an AI agent tasked with completing a software engineering task.\n\n"
+                f"Task: {task.raw_input}\n\n"
+                f"Success Criteria:\n{criteria}\n\n"
+                f"Recommended framework: {framework}\n"
+                f"Recommended skills: {skills}\n"
+                f"Execution strategy: {strategy}\n\n"
+                "Output ALL files in this exact format (one block per file):\n\n"
+                "--- FILE: path/to/file ---\n"
+                "file content here\n"
+                "--- END FILE ---\n\n"
+                "Include a manifest.json listing all files you created.\n"
+                "Generate ALL files in a single response. Do not explain — just output the file blocks."
+            )
+
+            start = time.time()
+            response = await provider.complete(
+                messages=[
+                    Message(role="system", content=system_prompt),
+                    Message(role="user", content=f"Complete this task: {task.raw_input}"),
+                ],
+                max_tokens=12288,
+            )
+            duration_ms = int((time.time() - start) * 1000)
+
+            trace.record_llm_call(
+                provider=provider.provider_name,
+                model=provider.model,
+                input_tokens=response.input_tokens,
+                output_tokens=response.output_tokens,
+                duration_ms=duration_ms,
+            )
+
+            # Parse and write file blocks
+            file_blocks = _FILE_PATTERN.findall(response.content)
+            if not file_blocks:
+                # Write raw output as fallback
+                file_blocks = [("output.py", response.content)]
+
+            for path, content in file_blocks:
+                path = path.strip()
+                full_path = os.path.realpath(os.path.join(output_dir, path))
+                base_real = os.path.realpath(output_dir)
+                if not full_path.startswith(base_real + os.sep) and full_path != base_real:
+                    logger.warning("Blocked path traversal: %s", path)
+                    continue
+                os.makedirs(os.path.dirname(full_path), exist_ok=True)
+                with open(full_path, "w") as f:
+                    f.write(content)
+
+            logger.info("Direct execution wrote %d files in %dms", len(file_blocks), duration_ms)
+
+            # Collect artifacts
+            artifacts = {}
+            for root, _, files in os.walk(output_dir):
+                for filename in files:
+                    filepath = os.path.join(root, filename)
+                    rel_path = os.path.relpath(filepath, output_dir)
+                    try:
+                        with open(filepath) as f:
+                            artifacts[rel_path] = f.read()
+                    except (UnicodeDecodeError, OSError):
+                        artifacts[rel_path] = "<binary file>"
+
+            return ExecutionResult(
+                run_id=run_id,
+                artifacts=artifacts,
+                trace=trace.finalize(),
+                output_dir=output_dir,
+                success=True,
+            )
+
+        except Exception as e:
+            logger.error("Direct execution failed for run %s: %s", run_id, e)
+            execution_trace = trace.finalize()
+            execution_trace.error = str(e)
+            return ExecutionResult(
+                run_id=run_id,
+                trace=execution_trace,
+                output_dir=output_dir,
                 success=False,
                 error=str(e),
             )

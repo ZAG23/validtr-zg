@@ -17,6 +17,7 @@ from recommender.prompts import RECOMMENDATION_SYSTEM, RECOMMENDATION_USER
 
 logger = logging.getLogger(__name__)
 _SKILL_WITH_SOURCE_PATTERN = re.compile(r"^\s*(?P<name>.+?)\s*\((?P<source>[^()]+)\)\s*$")
+_MAX_SKILL_DESCRIPTION_CHARS = 160
 
 
 class LLMReasoningEngine:
@@ -38,7 +39,11 @@ class LLMReasoningEngine:
         skills_text = "No skills available"
         if available_skills:
             skills_summary = [
-                {"name": s["name"], "description": s["description"], "source": s["source"]}
+                {
+                    "name": s["name"],
+                    "description": str(s["description"])[:_MAX_SKILL_DESCRIPTION_CHARS],
+                    "source": s["source"],
+                }
                 for s in available_skills
             ]
             skills_text = json.dumps(skills_summary, indent=2)
