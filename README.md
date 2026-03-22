@@ -15,8 +15,6 @@
 
 A CLI tool that takes a natural language task description, recommends the optimal agentic stack (LLM, agent framework, MCP servers, agent skills), provisions that stack in Docker containers, executes the task, generates tests, and scores the result.
 
-If the score falls below 95%, it iterates — adjusting the stack and retrying until the threshold is met or max retries are exhausted.
-
 ## Why validtr
 
 - Recommends the best-fit stack for your task instead of hardcoding one provider/toolchain.
