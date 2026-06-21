@@ -19,7 +19,7 @@ Manage local non-secret configuration.
 
 ```bash
 validtr config set provider anthropic
-validtr config set score-threshold 90
+validtr config set score-threshold 95
 validtr config set max-attempts 5
 validtr config set timeout 600
 validtr config set engine-addr http://127.0.0.1:4041

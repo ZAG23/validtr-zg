@@ -29,7 +29,7 @@ Users can compare the same task across multiple LLM providers in a single run. R
 | Product name | **validtr** | Short, memorable, implies validation |
 | CLI language | **Go (Cobra)** | Single binary, zero runtime deps for user |
 | Engine language | **Python** | AI/agent SDK ecosystem compatibility |
-| CLI ↔ Engine | **gRPC** | Typed contracts, streaming for real-time output |
+| CLI ↔ Engine | **HTTP/JSON** | Implemented transport; typed gRPC contracts remain a future target |
 | UI framework | **React + TypeScript** | Bundled into Go binary, served locally |
 | UI hosting | **Local only (localhost:4040)** | No hosted UI initially. Future: hosted option |
 | Community registry | **Local-first** | Registry data stored locally, future: hosted sync |
@@ -49,7 +49,7 @@ Users can compare the same task across multiple LLM providers in a single run. R
 │  ┌──────────────┐       ┌──────────────────────────────────┐    │
 │  │  Go CLI      │       │  Python Engine                   │    │
 │  │  (Cobra)     │◄─────►│  (FastAPI @ localhost:4041)      │    │
-│  │              │ gRPC  │                                  │    │
+│  │              │ HTTP  │                                  │    │
 │  │  • UX/Output │       │  • Task Analyzer                │    │
 │  │  • Config    │       │  • Recommendation Engine         │    │
 │  │  • Auth      │       │  • Stack Provisioner             │    │
@@ -555,7 +555,7 @@ cmd/
 internal/
 ├── engine/
 │   ├── manager.go          # Python engine lifecycle
-│   └── client.go           # gRPC client
+│   └── client.go           # HTTP client
 ├── config/
 │   ├── config.go
 │   └── credentials.go
@@ -710,7 +710,7 @@ tailwind.config.ts
 |---|---|---|
 | CLI | Go + Cobra + lipgloss | Single binary, rich TUI |
 | Engine | Python + FastAPI | AI SDK ecosystem |
-| CLI ↔ Engine | gRPC | Typed, streaming |
+| CLI ↔ Engine | HTTP/JSON | Implemented; gRPC planned |
 | UI | React + TypeScript + Tailwind | Bundled into Go binary |
 | UI ↔ Engine | HTTP + SSE | Real-time updates |
 | Containers | Docker + Docker Compose | Isolation |

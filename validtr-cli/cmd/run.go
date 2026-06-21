@@ -58,7 +58,7 @@ func init() {
 	runCmd.Flags().BoolVar(&runDryRun, "dry-run", false, "Recommend a stack but don't execute")
 	runCmd.Flags().StringVar(&runModel, "model", "", "Specific model to use")
 	runCmd.Flags().IntVar(&runMaxAttempts, "max-attempts", 1, "Maximum number of attempts")
-	runCmd.Flags().Float64Var(&runScoreThreshold, "score-threshold", 90.0, "Minimum passing score (0-100)")
+	runCmd.Flags().Float64Var(&runScoreThreshold, "score-threshold", 95.0, "Minimum passing score (0-100)")
 	runCmd.Flags().IntVar(&runTimeout, "timeout", 300, "Execution timeout in seconds")
 }
 

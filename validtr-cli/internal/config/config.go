@@ -45,7 +45,7 @@ func resolveConfigPath() (string, error) {
 func DefaultConfig() *Config {
 	return &Config{
 		Provider:       "anthropic",
-		ScoreThreshold: 90.0,
+		ScoreThreshold: 95.0,
 		MaxAttempts:    1,
 		Timeout:        300,
 		EngineAddr:     "http://127.0.0.1:4041",
@@ -110,7 +110,7 @@ func (c *Config) Save() error {
 // Examples:
 //
 //	Set("provider", ["anthropic"])
-//	Set("score-threshold", ["90"])
+//	Set("score-threshold", ["95"])
 //	Set("max-attempts", ["5"])
 //	Set("timeout", ["600"])
 //	Set("engine-addr", ["http://127.0.0.1:4041"])

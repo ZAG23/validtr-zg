@@ -6,7 +6,7 @@ After the recommended stack executes a task, validtr scores the output to measur
 
 The validation score (0–100) is a quality measurement of the output, not a confidence level. A score of 55 means the stack produced something that partially works — maybe it ran without errors and the code is syntactically valid, but the generated tests failed and the LLM judge found missing requirements. A score of 95+ means the output is production-quality with only minor non-deterministic variance.
 
-The score drives the retry loop. If it falls below the threshold (default 90), the engine analyzes which dimensions scored low, adjusts the stack accordingly, and tries again.
+The score drives the retry loop. If it falls below the threshold (default 95), the engine analyzes which dimensions scored low, adjusts the stack accordingly, and tries again.
 
 ## Dimensions
 

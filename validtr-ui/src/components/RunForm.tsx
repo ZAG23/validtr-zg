@@ -23,7 +23,7 @@ export function RunForm() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [model, setModel] = useState("");
   const [maxAttempts, setMaxAttempts] = useState(1);
-  const [scoreThreshold, setScoreThreshold] = useState(90);
+  const [scoreThreshold, setScoreThreshold] = useState(95);
   const [timeout, setTimeout_] = useState(300);
   const [dryRun, setDryRun] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -53,7 +53,7 @@ export function RunForm() {
       if (apiKey.trim()) req.api_key = apiKey.trim();
       if (model.trim()) req.model = model.trim();
       if (maxAttempts !== 1) req.max_attempts = maxAttempts;
-      if (scoreThreshold !== 90) req.score_threshold = scoreThreshold;
+      if (scoreThreshold !== 95) req.score_threshold = scoreThreshold;
       if (timeout !== 300) req.timeout = timeout;
 
       void execute(req);
