@@ -4,9 +4,12 @@ The engine supports three provider adapters through a common interface.
 
 ## Supported Providers
 
-- `anthropic` (default model: `claude-sonnet-4-20250514`)
-- `openai` (default model: `gpt-4o`)
-- `gemini` (default model: `gemini-2.5-flash`)
+- `anthropic`
+- `openai`
+- `gemini`
+
+There are no default models. A model must be specified explicitly via `--model`
+(CLI) or `model` (API request); omitting it raises an error.
 
 ## Env Vars
 
@@ -49,4 +52,5 @@ Unified response fields:
 
 ## Unknown Provider Handling
 
-`get_provider(...)` raises `ValueError` for unsupported provider names.
+`get_provider(...)` raises `ValueError` for unsupported provider names, and also
+when no model is supplied (there is no default model).

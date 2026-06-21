@@ -15,10 +15,6 @@ class GeminiProvider(LLMProvider):
     """Provider for Google Gemini models."""
 
     @property
-    def default_model(self) -> str:
-        return "gemini-2.5-flash"
-
-    @property
     def provider_name(self) -> str:
         return "gemini"
 

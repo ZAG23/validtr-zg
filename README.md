@@ -82,8 +82,10 @@ uvicorn api.server:app --host 127.0.0.1 --port 4041
 ### 5) Run your first task
 
 ```bash
-./validtr run "Build a FastAPI web app with JWT auth" --provider anthropic
+./validtr run "Build a FastAPI web app with JWT auth" --provider anthropic --model claude-sonnet-4-20250514
 ```
+
+> `--model` is required — validtr has no default model for any provider.
 
 ![](images/sample.png)
 
@@ -92,14 +94,11 @@ uvicorn api.server:app --host 127.0.0.1 --port 4041
 ### Run a task
 
 ```bash
-# Single provider
-./validtr run "Build a FastAPI web app with JWT auth" --provider anthropic
-
-# Compare across providers
-validtr run "Build a REST API with CRUD endpoints" --compare anthropic,openai,gemini
+# Single provider (--model is required; validtr has no default model)
+./validtr run "Build a FastAPI web app with JWT auth" --provider anthropic --model claude-sonnet-4-20250514
 
 # Dry run — recommend a stack but don't execute
-validtr run "Automate PR code reviews" --dry-run
+validtr run "Automate PR code reviews" --provider anthropic --model claude-sonnet-4-20250514 --dry-run
 
 # Override defaults
 validtr run "Build a CLI in Go" \

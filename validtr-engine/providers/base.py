@@ -41,11 +41,12 @@ class LLMProvider(abc.ABC):
 
     def __init__(self, api_key: str | None = None, model: str | None = None):
         self.api_key = api_key
-        self.model = model or self.default_model
-
-    @property
-    @abc.abstractmethod
-    def default_model(self) -> str: ...
+        if not model:
+            raise ValueError(
+                f"No model specified for provider '{self.provider_name}'. "
+                "validtr has no default model — pass --model on the CLI or 'model' in the API request."
+            )
+        self.model = model
 
     @property
     @abc.abstractmethod

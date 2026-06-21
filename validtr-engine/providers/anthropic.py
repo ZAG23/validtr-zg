@@ -13,10 +13,6 @@ class AnthropicProvider(LLMProvider):
     """Provider for Anthropic's Claude models."""
 
     @property
-    def default_model(self) -> str:
-        return "claude-sonnet-4-20250514"
-
-    @property
     def provider_name(self) -> str:
         return "anthropic"
 
