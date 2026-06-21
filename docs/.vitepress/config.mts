@@ -3,9 +3,20 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   base: '/validtr/',
   title: 'validtr',
-  description: 'Natural language in. Production-grade agentic stack out.',
+  description: 'Natural language in. Production-grade stack out.',
   cleanUrls: true,
   srcExclude: ['README.md'],
+  head: [
+    ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
+    ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
+    [
+      'link',
+      {
+        rel: 'stylesheet',
+        href: 'https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap',
+      },
+    ],
+  ],
   themeConfig: {
     logo: '/validtr-logo.png',
     nav: [

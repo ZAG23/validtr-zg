@@ -3,7 +3,7 @@ layout: home
 
 hero:
   name: validtr
-  text: Agentic Harness validation
+  text: Validate the agent harness, end to end
   tagline: Natural language in. Production-grade stack out.
   image:
     src: /validtr-logo.png
@@ -17,12 +17,12 @@ hero:
       link: /reference/cli
 
 features:
-  - title: Stack Recommendation
-    details: Recommends LLM, framework, MCP servers, and skills for each task.
+  - title: Harness Recommendation
+    details: Picks the LLM, framework, MCP servers, and skills for each task.
   - title: Containerized Execution
-    details: Runs agent workflows in isolated Docker environments.
-  - title: Test + Score + Retry
-    details: Generates tests, computes score, and iterates until threshold or retry limit.
+    details: Runs the recommended harness in isolated Docker environments.
+  - title: Test · Score · Retry
+    details: Generates tests, scores the result, and iterates until the threshold or attempt limit.
 ---
 
 ## Start Here
