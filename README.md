@@ -155,7 +155,7 @@ npm install
 
 ### Run the UI
 
-Make sure the engine is running first (see step 4 above), then:
+Make sure the engine is running first (see step 4 above - `uvicorn api.server:app --host 127.0.0.1 --port 4041`), then:
 
 ```bash
 cd validtr-ui
