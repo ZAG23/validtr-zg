@@ -27,7 +27,7 @@ class RunRequest(BaseModel):
     model: str | None = None
     api_key: str | None = None
     search_api_key: str | None = None
-    max_retries: int = 1
+    max_attempts: int = 1
     score_threshold: float = 90.0
     timeout: int = 300
     dry_run: bool = False
@@ -105,7 +105,7 @@ async def api_run_task(req: RunRequest):
             model=req.model,
             api_key=api_key,
             search_api_key=req.search_api_key,
-            max_retries=req.max_retries,
+            max_attempts=req.max_attempts,
             score_threshold=req.score_threshold,
             timeout=req.timeout,
         )

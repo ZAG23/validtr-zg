@@ -11,7 +11,7 @@ Example:
 ```yaml
 provider: anthropic
 score_threshold: 95.0
-max_retries: 3
+max_attempts: 3
 timeout: 300
 engine_addr: "http://127.0.0.1:4041"
 ```
@@ -29,7 +29,7 @@ export TAVILY_API_KEY="..."
 
 - `provider`
 - `score_threshold`
-- `max_retries`
+- `max_attempts`
 - `timeout`
 - `engine_addr`
 

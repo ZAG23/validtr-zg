@@ -13,19 +13,23 @@ logger = logging.getLogger(__name__)
 class RetryController:
     """Decides whether to retry and how to adjust the stack."""
 
-    def __init__(self, max_retries: int = 1, threshold: float = 90.0):
-        self.max_retries = max_retries
+    def __init__(self, max_attempts: int = 1, threshold: float = 90.0):
+        self.max_attempts = max_attempts
         self.threshold = threshold
         self.attempts: list[AttemptResult] = []
 
     def should_retry(self, score: ScoreResult, attempt_number: int) -> bool:
-        """Determine if we should retry based on score and attempt count."""
+        """Determine if we should retry based on score and attempt count.
+
+        max_attempts is the total number of attempts allowed, so max_attempts=1
+        means a single attempt with no retry.
+        """
         if score.composite_score >= self.threshold:
             logger.info("Score %.1f >= threshold %.1f, no retry needed", score.composite_score, self.threshold)
             return False
 
-        if attempt_number >= self.max_retries:
-            logger.info("Max retries (%d) reached", self.max_retries)
+        if attempt_number >= self.max_attempts:
+            logger.info("Max attempts (%d) reached", self.max_attempts)
             return False
 
         logger.info(
@@ -33,7 +37,7 @@ class RetryController:
             score.composite_score,
             self.threshold,
             attempt_number,
-            self.max_retries,
+            self.max_attempts,
         )
         return True
 

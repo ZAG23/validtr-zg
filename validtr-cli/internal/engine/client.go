@@ -84,14 +84,14 @@ func (c *Client) Close() {
 }
 
 // RunTask sends a task to the engine and returns the result.
-func (c *Client) RunTask(task, provider, model, apiKey, searchAPIKey string, maxRetries int, threshold float64, timeout int) (*RunResult, error) {
+func (c *Client) RunTask(task, provider, model, apiKey, searchAPIKey string, maxAttempts int, threshold float64, timeout int) (*RunResult, error) {
 	payload := map[string]interface{}{
 		"task":            task,
 		"provider":        provider,
 		"model":           model,
 		"api_key":         apiKey,
 		"search_api_key":  searchAPIKey,
-		"max_retries":     maxRetries,
+		"max_attempts":    maxAttempts,
 		"score_threshold": threshold,
 		"timeout":         timeout,
 	}

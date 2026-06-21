@@ -15,7 +15,7 @@ var (
 	runCompare        string
 	runDryRun         bool
 	runModel          string
-	runMaxRetries     int
+	runMaxAttempts     int
 	runScoreThreshold float64
 	runTimeout        int
 )
@@ -57,7 +57,7 @@ func init() {
 	runCmd.Flags().StringVar(&runCompare, "compare", "", "Compare across providers (comma-separated)")
 	runCmd.Flags().BoolVar(&runDryRun, "dry-run", false, "Recommend a stack but don't execute")
 	runCmd.Flags().StringVar(&runModel, "model", "", "Specific model to use")
-	runCmd.Flags().IntVar(&runMaxRetries, "max-retries", 1, "Maximum retry attempts")
+	runCmd.Flags().IntVar(&runMaxAttempts, "max-attempts", 1, "Maximum number of attempts")
 	runCmd.Flags().Float64Var(&runScoreThreshold, "score-threshold", 90.0, "Minimum passing score (0-100)")
 	runCmd.Flags().IntVar(&runTimeout, "timeout", 300, "Execution timeout in seconds")
 }
@@ -72,8 +72,8 @@ func loadRunConfig(cmd *cobra.Command) (*config.Config, error) {
 	if !cmd.Flags().Changed("provider") && cfg.Provider != "" {
 		runProvider = cfg.Provider
 	}
-	if !cmd.Flags().Changed("max-retries") && cfg.MaxRetries > 0 {
-		runMaxRetries = cfg.MaxRetries
+	if !cmd.Flags().Changed("max-attempts") && cfg.MaxAttempts > 0 {
+		runMaxAttempts = cfg.MaxAttempts
 	}
 	if !cmd.Flags().Changed("score-threshold") && cfg.ScoreThreshold > 0 {
 		runScoreThreshold = cfg.ScoreThreshold
@@ -109,7 +109,7 @@ func runSingleMode(cmd *cobra.Command, task string) error {
 	fmt.Println("├──────────────────────────────────────────────────┤")
 
 	searchKey := cfg.SearchAPIKey()
-	result, err := client.RunTask(task, runProvider, runModel, apiKey, searchKey, runMaxRetries, runScoreThreshold, runTimeout)
+	result, err := client.RunTask(task, runProvider, runModel, apiKey, searchKey, runMaxAttempts, runScoreThreshold, runTimeout)
 	if err != nil {
 		return fmt.Errorf("run failed: %w", err)
 	}
@@ -141,7 +141,7 @@ func runCompareMode(cmd *cobra.Command, task string, providers []string) error {
 		}
 
 		fmt.Printf("\n--- %s ---\n", provider)
-		result, err := client.RunTask(task, provider, "", apiKey, searchKey, runMaxRetries, runScoreThreshold, runTimeout)
+		result, err := client.RunTask(task, provider, "", apiKey, searchKey, runMaxAttempts, runScoreThreshold, runTimeout)
 		if err != nil {
 			fmt.Printf("  Error: %v\n", err)
 			continue

@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import re
+import shutil
 import time
 
 import docker
@@ -223,6 +224,31 @@ class ExecutionEngine:
             raise RuntimeError(f"Failed to build agent image: {e}") from e
         return tag
 
+    def _container_security_kwargs(self, environment: dict[str, str]) -> dict:
+        """Build resource and isolation limits for the agent container.
+
+        The agent container runs LLM-generated code with provider credentials
+        injected, so it gets hard memory/PID/CPU caps, all Linux capabilities
+        dropped, no privilege escalation, and a non-root user. Rootfs is NOT
+        made read-only: MCP stdio servers (npx/uvx) need a writable cache, so
+        we give them a tmpfs at /tmp and point HOME there instead.
+        """
+        kwargs: dict = {
+            "mem_limit": self.safety.mem_limit,
+            "memswap_limit": self.safety.mem_limit,  # equal to mem_limit disables swap
+            "pids_limit": self.safety.pids_limit,
+            "nano_cpus": int(self.safety.cpus * 1_000_000_000),
+            "security_opt": ["no-new-privileges:true"],
+            "tmpfs": {"/tmp": "rw,size=256m,mode=1777"},
+        }
+        if self.safety.drop_capabilities:
+            kwargs["cap_drop"] = ["ALL"]
+        if self.safety.run_as_user:
+            kwargs["user"] = self.safety.run_as_user
+            # Non-root user has no home dir in the image; route caches to tmpfs.
+            environment.setdefault("HOME", "/tmp")
+        return kwargs
+
     async def _run_agent_container(
         self,
         run_dir: str,
@@ -252,6 +278,8 @@ class ExecutionEngine:
             agent_loop_path: {"bind": "/app/agent_loop.py", "mode": "ro"},
         }
 
+        run_kwargs = self._container_security_kwargs(environment)
+
         logger.info("Running agent container (image: %s)", image_tag)
         container = None
         try:
@@ -260,6 +288,7 @@ class ExecutionEngine:
                 detach=True,
                 volumes=volumes,
                 environment=environment,
+                **run_kwargs,
             )
 
             result = container.wait(timeout=self.safety.timeout_seconds)
@@ -304,11 +333,22 @@ class ExecutionEngine:
         return artifacts
 
     async def cleanup(self, run_id: str) -> None:
-        """Clean up Docker resources for a run."""
-        tag = f"validtr-agent-{run_id}"
-        try:
-            self.docker_client.images.remove(tag, force=True)
-        except docker.errors.ImageNotFound:
-            pass
-        except docker.errors.APIError as e:
-            logger.warning("Cleanup failed for %s: %s", tag, e)
+        """Reclaim the per-run image and working directory for a run.
+
+        Only touches Docker if a client was actually created (the direct
+        execution fast path never uses Docker), so cleanup after a direct run
+        won't spin up a client just to remove a non-existent image.
+        """
+        # Remove the per-run agent image, if one was built (MCP path only).
+        if self._docker_client is not None:
+            tag = f"validtr-agent-{run_id}"
+            try:
+                self._docker_client.images.remove(tag, force=True)
+            except docker.errors.ImageNotFound:
+                pass
+            except docker.errors.APIError as e:
+                logger.warning("Cleanup failed for image %s: %s", tag, e)
+
+        # Remove the working directory (compose files, workspace, artifacts).
+        run_dir = os.path.join(self.compose_gen.output_base, run_id)
+        shutil.rmtree(run_dir, ignore_errors=True)

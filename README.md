@@ -66,7 +66,7 @@ Optionally create `~/.validtr/config.yaml` for non-secret settings:
 ```yaml
 provider: anthropic
 score_threshold: 95.0
-max_retries: 3
+max_attempts: 3
 timeout: 300
 engine_addr: "http://127.0.0.1:4041"
 ```
@@ -105,7 +105,7 @@ validtr run "Automate PR code reviews" --dry-run
 validtr run "Build a CLI in Go" \
   --provider openai \
   --model gpt-4o \
-  --max-retries 5 \
+  --max-attempts 5 \
   --score-threshold 90 \
   --timeout 600
 ```
@@ -123,7 +123,7 @@ validtr mcp info filesystem
 ```bash
 validtr config set provider anthropic
 validtr config set score-threshold 90
-validtr config set max-retries 5
+validtr config set max-attempts 5
 validtr config set timeout 600
 validtr config set engine-addr http://127.0.0.1:4041
 validtr config show

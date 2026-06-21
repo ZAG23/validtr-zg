@@ -54,9 +54,13 @@ def analyze_failures(
                     })
 
         elif dim.name == "Execution":
+            # Emit re_search (not add_mcp_server): get_re_search_hints only reads
+            # re_search actions, and apply_adjustments only ever knew how to act on
+            # upgrade_model. Using re_search makes these hints actually reach the
+            # recommendation engine's supplemental MCP search on retry.
             adjustments.append({
-                "action": "add_mcp_server",
-                "reason": "execution failure — may need additional tools",
+                "action": "re_search",
+                "reason": "execution failure — search for tools to fix it",
                 "query_hints": ["execution runtime tools", current_stack.llm.provider],
             })
 

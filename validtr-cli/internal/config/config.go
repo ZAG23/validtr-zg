@@ -14,7 +14,7 @@ import (
 type Config struct {
 	Provider       string  `yaml:"provider"`
 	ScoreThreshold float64 `yaml:"score_threshold"`
-	MaxRetries     int     `yaml:"max_retries"`
+	MaxAttempts    int     `yaml:"max_attempts"`
 	Timeout        int     `yaml:"timeout"`
 	EngineAddr     string  `yaml:"engine_addr"`
 
@@ -46,7 +46,7 @@ func DefaultConfig() *Config {
 	return &Config{
 		Provider:       "anthropic",
 		ScoreThreshold: 90.0,
-		MaxRetries:     1,
+		MaxAttempts:    1,
 		Timeout:        300,
 		EngineAddr:     "http://127.0.0.1:4041",
 	}
@@ -111,7 +111,7 @@ func (c *Config) Save() error {
 //
 //	Set("provider", ["anthropic"])
 //	Set("score-threshold", ["90"])
-//	Set("max-retries", ["5"])
+//	Set("max-attempts", ["5"])
 //	Set("timeout", ["600"])
 //	Set("engine-addr", ["http://127.0.0.1:4041"])
 func (c *Config) Set(key string, valueArgs []string) error {
@@ -130,12 +130,12 @@ func (c *Config) Set(key string, valueArgs []string) error {
 			return fmt.Errorf("invalid score-threshold: %s", valueArgs[0])
 		}
 		c.ScoreThreshold = v
-	case "max-retries":
+	case "max-attempts":
 		v, err := strconv.Atoi(valueArgs[0])
 		if err != nil {
-			return fmt.Errorf("invalid max-retries: %s", valueArgs[0])
+			return fmt.Errorf("invalid max-attempts: %s", valueArgs[0])
 		}
-		c.MaxRetries = v
+		c.MaxAttempts = v
 	case "timeout":
 		v, err := strconv.Atoi(valueArgs[0])
 		if err != nil {
@@ -143,7 +143,7 @@ func (c *Config) Set(key string, valueArgs []string) error {
 		}
 		c.Timeout = v
 	default:
-		return fmt.Errorf("unknown config key: %s (valid keys: provider, engine-addr, score-threshold, max-retries, timeout)", key)
+		return fmt.Errorf("unknown config key: %s (valid keys: provider, engine-addr, score-threshold, max-attempts, timeout)", key)
 	}
 	return nil
 }

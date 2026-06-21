@@ -19,7 +19,7 @@ var configSetCmd = &cobra.Command{
 	Long: `Set a configuration value. Examples:
   validtr config set provider anthropic
   validtr config set score-threshold 90
-  validtr config set max-retries 5
+  validtr config set max-attempts 5
   validtr config set timeout 600
   validtr config set engine-addr http://127.0.0.1:4041
 
@@ -61,7 +61,7 @@ var configShowCmd = &cobra.Command{
 
 		fmt.Printf("Provider:         %s\n", cfg.Provider)
 		fmt.Printf("Score Threshold:  %.0f\n", cfg.ScoreThreshold)
-		fmt.Printf("Max Retries:      %d\n", cfg.MaxRetries)
+		fmt.Printf("Max Attempts:     %d\n", cfg.MaxAttempts)
 		fmt.Printf("Timeout:          %ds\n", cfg.Timeout)
 		fmt.Printf("Engine Address:   %s\n", cfg.EngineAddr)
 

@@ -22,7 +22,7 @@ curl -X POST http://127.0.0.1:4041/api/run \
     "provider": "anthropic",
     "api_key": "<provider-key>",
     "search_api_key": "<tavily-key>",
-    "max_retries": 3,
+    "max_attempts": 3,
     "score_threshold": 95,
     "timeout": 300
   }'

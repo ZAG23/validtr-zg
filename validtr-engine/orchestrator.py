@@ -23,7 +23,7 @@ async def run_task(
     provider: str = "anthropic",
     api_key: str | None = None,
     model: str | None = None,
-    max_retries: int = 1,
+    max_attempts: int = 1,
     score_threshold: float = 90.0,
     timeout: int = 300,
     search_api_key: str | None = None,
@@ -69,7 +69,7 @@ async def run_task(
     logger.info("Recommended: %s/%s", stack.llm.provider, stack.llm.model)
 
     # Initialize retry controller
-    retry_ctrl = RetryController(max_retries=max_retries, threshold=score_threshold)
+    retry_ctrl = RetryController(max_attempts=max_attempts, threshold=score_threshold)
 
     # Initialize engines
     executor = ExecutionEngine(safety_limits=SafetyLimits(timeout_seconds=timeout))
@@ -141,6 +141,13 @@ async def run_task(
             test_code=test_results.test_code,
             adjustment_notes=stack.adjustment_notes,
         )
+
+        # Artifacts are now captured in memory; reclaim this attempt's
+        # per-run image and working directory so they don't accumulate.
+        try:
+            await executor.cleanup(attempt_run_id)
+        except Exception as e:
+            logger.warning("Cleanup failed for %s: %s", attempt_run_id, e)
 
         # === Step 7: Retry? ===
         if not retry_ctrl.should_retry(score, attempt):

@@ -17,8 +17,8 @@ func TestDefaultConfig(t *testing.T) {
 	if cfg.ScoreThreshold != 90.0 {
 		t.Errorf("expected default score threshold 90.0, got %f", cfg.ScoreThreshold)
 	}
-	if cfg.MaxRetries != 1 {
-		t.Errorf("expected default max retries 1, got %d", cfg.MaxRetries)
+	if cfg.MaxAttempts != 1 {
+		t.Errorf("expected default max attempts 1, got %d", cfg.MaxAttempts)
 	}
 	if cfg.Timeout != 300 {
 		t.Errorf("expected default timeout 300, got %d", cfg.Timeout)
@@ -49,7 +49,7 @@ func TestSaveAndLoad_Roundtrip(t *testing.T) {
 	original.path = configPath
 	original.Provider = "openai"
 	original.ScoreThreshold = 88.5
-	original.MaxRetries = 5
+	original.MaxAttempts = 5
 	original.Timeout = 600
 	original.EngineAddr = "http://localhost:9090"
 
@@ -78,8 +78,8 @@ func TestSaveAndLoad_Roundtrip(t *testing.T) {
 	if loaded.ScoreThreshold != 88.5 {
 		t.Errorf("score threshold: want 88.5, got %f", loaded.ScoreThreshold)
 	}
-	if loaded.MaxRetries != 5 {
-		t.Errorf("max retries: want 5, got %d", loaded.MaxRetries)
+	if loaded.MaxAttempts != 5 {
+		t.Errorf("max attempts: want 5, got %d", loaded.MaxAttempts)
 	}
 	if loaded.Timeout != 600 {
 		t.Errorf("timeout: want 600, got %d", loaded.Timeout)
@@ -125,13 +125,13 @@ func TestSet_ScoreThreshold_PartialNumber(t *testing.T) {
 	}
 }
 
-func TestSet_MaxRetries(t *testing.T) {
+func TestSet_MaxAttempts(t *testing.T) {
 	cfg := DefaultConfig()
-	if err := cfg.Set("max-retries", []string{"5"}); err != nil {
-		t.Fatalf("Set max-retries: %v", err)
+	if err := cfg.Set("max-attempts", []string{"5"}); err != nil {
+		t.Fatalf("Set max-attempts: %v", err)
 	}
-	if cfg.MaxRetries != 5 {
-		t.Errorf("expected max retries 5, got %d", cfg.MaxRetries)
+	if cfg.MaxAttempts != 5 {
+		t.Errorf("expected max attempts 5, got %d", cfg.MaxAttempts)
 	}
 }
 
