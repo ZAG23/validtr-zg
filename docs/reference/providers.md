@@ -38,7 +38,10 @@ Unified response fields:
 ### Anthropic
 
 - Uses `anthropic.AsyncAnthropic`.
-- JSON mode is emulated via assistant prefill with `{`.
+- JSON mode is steered via a system-prompt instruction (the model is asked to
+  return only a JSON object), and markdown code fences are stripped from the
+  response. Assistant-message prefill is **not** used — current Claude models
+  reject it (the conversation must end with a user message).
 
 ### OpenAI
 

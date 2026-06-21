@@ -15,7 +15,9 @@ Core schemas are under `validtr-engine/models`.
 - `FrameworkRecommendation`
 - `MCPServerRecommendation`
 - `StackRecommendation`
-- `MCPTransport`: `stdio` or `streamable-http`
+- `MCPTransport`: `stdio` or `streamable-http`. Recommended servers advertising
+  any other transport (including the deprecated `sse`) are skipped when building
+  the stack rather than failing the run.
 
 ## Execution Models
 

@@ -9,6 +9,16 @@ from providers.base import CompletionResponse, LLMProvider, Message, ToolDefinit
 logger = logging.getLogger(__name__)
 
 
+def _strip_json_fences(text: str) -> str:
+    """Remove surrounding markdown code fences from a JSON response."""
+    stripped = text.strip()
+    if stripped.startswith("```"):
+        stripped = stripped.split("\n", 1)[-1] if "\n" in stripped else stripped[3:]
+        if stripped.endswith("```"):
+            stripped = stripped[:-3]
+    return stripped.strip()
+
+
 class AnthropicProvider(LLMProvider):
     """Provider for Anthropic's Claude models."""
 
@@ -81,10 +91,15 @@ class AnthropicProvider(LLMProvider):
     ) -> CompletionResponse:
         system, api_messages = self._convert_messages(messages)
 
-        # Anthropic doesn't have a native JSON mode — use a prefill to
-        # force the model to start its response with '{'.
-        if json_mode and api_messages and api_messages[-1]["role"] != "assistant":
-            api_messages.append({"role": "assistant", "content": "{"})
+        # Anthropic has no schemaless JSON mode, and current Claude models reject
+        # assistant-message prefill (the conversation must end with a user turn),
+        # so steer JSON output via a system-prompt instruction instead.
+        if json_mode:
+            json_instruction = (
+                "Respond with only a single valid JSON object. Do not include any "
+                "text before or after the JSON, and do not wrap it in markdown code fences."
+            )
+            system = f"{system}\n\n{json_instruction}" if system else json_instruction
 
         kwargs: dict = {
             "model": self.model,
@@ -116,9 +131,9 @@ class AnthropicProvider(LLMProvider):
                     "arguments": block.input,
                 })
 
-        # When using the prefill trick, prepend the '{' that was consumed
-        if json_mode and content and not content.startswith("{"):
-            content = "{" + content
+        # Defensively strip markdown code fences so callers can json.loads() directly.
+        if json_mode:
+            content = _strip_json_fences(content)
 
         return CompletionResponse(
             content=content,

@@ -22,6 +22,18 @@ Set one of:
 - `OPENAI_API_KEY`
 - `GOOGLE_API_KEY`
 
+## No Model Specified
+
+`validtr run` requires `--model` — there is no default model. If you omit it the
+CLI exits with "no model specified — pass --model".
+
+## Model Not Found
+
+A run failing with a model-not-found error (HTTP 400 from the engine) means the
+model id is misspelled or **retired** by the provider. Use a current model id —
+e.g. for Anthropic, `claude-sonnet-4-6` or `claude-opus-4-8`. (Older dated ids
+such as `claude-sonnet-4-20250514` have been retired.)
+
 ## Docker Errors
 
 Potential causes:

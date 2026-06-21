@@ -7,9 +7,8 @@ import re
 from models.stack import (
     FrameworkRecommendation,
     LLMRecommendation,
-    MCPServerRecommendation,
-    MCPTransport,
     StackRecommendation,
+    build_mcp_servers,
 )
 from models.task import TaskDefinition
 from providers.base import LLMProvider, Message
@@ -93,16 +92,7 @@ class LLMReasoningEngine:
                 name=framework_data.get("name"),
                 reason=framework_data.get("reason", ""),
             ),
-            mcp_servers=[
-                MCPServerRecommendation(
-                    name=s["name"],
-                    transport=MCPTransport(s.get("transport", "stdio")),
-                    install=s.get("install", ""),
-                    credentials=s.get("credentials", "none"),
-                    description=s.get("description", ""),
-                )
-                for s in mcp_list
-            ],
+            mcp_servers=build_mcp_servers(mcp_list),
             skills=_parse_skills(
                 raw_skills=data.get("skills", []),
                 available_skills=available_skills or [],
