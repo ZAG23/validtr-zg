@@ -2,13 +2,14 @@
 
 import asyncio
 import logging
+import os
 import time
 import uuid
 
 from analyzer.task_analyzer import TaskAnalyzer
 from executor.engine import ExecutionEngine
 from executor.safety import SafetyLimits
-from models.score import FinalResult, StackSummary
+from models.score import FinalResult
 from providers import pricing
 from providers.base import get_provider
 from providers.usage import UsageTracker
@@ -80,6 +81,7 @@ async def run_task(
     scoring = ScoringEngine(provider=llm)
 
     attempt = 0
+    attempt_run_ids: list[str] = []
 
     while True:
         attempt += 1
@@ -145,12 +147,9 @@ async def run_task(
             adjustment_notes=stack.adjustment_notes,
         )
 
-        # Artifacts are now captured in memory; reclaim this attempt's
-        # per-run image and working directory so they don't accumulate.
-        try:
-            await executor.cleanup(attempt_run_id)
-        except Exception as e:
-            logger.warning("Cleanup failed for %s: %s", attempt_run_id, e)
+        # Defer cleanup until the run ends: the best attempt's working dir must
+        # survive long enough to read its harness-report.json.
+        attempt_run_ids.append(attempt_run_id)
 
         # === Step 7: Retry? ===
         if not retry_ctrl.should_retry(score, attempt):
@@ -215,6 +214,40 @@ async def run_task(
         best_result.total_duration_ms / 1000,
         best_result.total_cost,
     )
+
+    # === Harness token projection (+ close the in-container token gap) ===
+    # The agent writes harness-report.json into its run dir; read the best
+    # attempt's report, fold its measured usage into the run totals, and project.
+    from estimator.harness_report import read_harness_report
+    from estimator.projection import projection_from_report
+
+    if best is not None:
+        best_run_id = f"{run_id}-{best.attempt_number}"
+        report_path = os.path.join(
+            executor.compose_gen.output_base, best_run_id,
+            "workspace", "output", "harness-report.json",
+        )
+        report = read_harness_report(report_path)
+        if report is not None:
+            best_result.total_tokens += report.measured_total_tokens
+            best_result.harness_projection = projection_from_report(
+                report,
+                provider=provider,
+                model=(model or llm.model),
+                catalog=pricing.load_catalog(),
+            )
+            logger.info(
+                "Harness projection: overhead=%d tokens, +%d measured in-container tokens",
+                best_result.harness_projection.overhead_tokens,
+                report.measured_total_tokens,
+            )
+
+    # Now that the best report has been read, reclaim all attempt working dirs/images.
+    for rid in attempt_run_ids:
+        try:
+            await executor.cleanup(rid)
+        except Exception as e:
+            logger.warning("Cleanup failed for %s: %s", rid, e)
 
     logger.info(
         "Run %s complete in %.2fs: best stack=%s/%s, score=%.1f, attempts=%d",

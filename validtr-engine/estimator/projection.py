@@ -1,5 +1,11 @@
 """Pure growing-context token projection for the agent harness."""
 
+from estimator.harness_overhead import (
+    avg_output_per_turn,
+    components_from_report,
+    overhead_tokens,
+)
+from estimator.harness_report import HarnessReport
 from models.projection import HarnessComponent, HarnessProjection, ProjectionRow
 from providers import pricing
 
@@ -72,4 +78,19 @@ def build_projection(
         avg_output_tokens_per_turn=avg_output_per_turn or DEFAULT_AVG_OUTPUT_TOKENS_PER_TURN,
         components=components,
         rows=rows,
+    )
+
+
+def projection_from_report(
+    report: HarnessReport, provider: str, model: str, catalog: dict
+) -> HarnessProjection:
+    """Build a priced HarnessProjection from an in-container harness report."""
+    components = components_from_report(report)
+    return build_projection(
+        overhead_tokens=overhead_tokens(components),
+        avg_output_per_turn=avg_output_per_turn(report) or None,
+        components=components,
+        provider=provider,
+        model=model,
+        catalog=catalog,
     )

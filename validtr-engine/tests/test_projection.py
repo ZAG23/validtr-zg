@@ -1,5 +1,6 @@
 from estimator import projection
-from estimator.projection import build_projection
+from estimator.harness_report import HarnessReport
+from estimator.projection import build_projection, projection_from_report
 from models.projection import HarnessComponent
 
 
@@ -62,3 +63,24 @@ def test_build_projection_unavailable_cost_when_unpriced():
         catalog=CATALOG,
     )
     assert all(r.est_cost == "unavailable" for r in proj.rows)
+
+
+def test_projection_from_report_builds_priced_rows():
+    report = HarnessReport(
+        system_prompt_tokens=400,
+        measured_input_tokens=8000,
+        measured_output_tokens=1000,
+        turns=4,
+        mcp_server_names=["filesystem"],
+        skill_names=["k8skill"],
+    )
+    proj = projection_from_report(
+        report, provider="anthropic", model="claude-sonnet-4-20250514", catalog=CATALOG
+    )
+    # overhead = 400 (system) + 700 (1 mcp) + 400 (1 skill) = 1500
+    assert proj.overhead_tokens == 1500
+    assert {r.preset for r in proj.rows} == {"Light", "Standard", "Heavy"}
+    assert proj.rows[0].est_cost.startswith("$")
+    # components carried through
+    kinds = {c.kind for c in proj.components}
+    assert kinds == {"system_prompt", "mcp_server", "skill"}

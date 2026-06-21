@@ -2,6 +2,8 @@
 
 from pydantic import BaseModel, Field
 
+from models.projection import HarnessProjection
+
 
 class DimensionScore(BaseModel):
     """Score for a single dimension."""
@@ -65,3 +67,4 @@ class FinalResult(BaseModel):
     total_cost: str = "$0.00"
     total_tokens: int = 0
     total_duration_ms: int = 0
+    harness_projection: HarnessProjection = Field(default_factory=HarnessProjection)
