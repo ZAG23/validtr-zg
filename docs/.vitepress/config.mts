@@ -18,7 +18,7 @@ export default defineConfig({
     ],
   ],
   themeConfig: {
-    logo: '/validtr-logo.png',
+    logo: '/validtr-mark.png',
     nav: [
       { text: 'Guide', link: '/getting-started/overview' },
       { text: 'Concepts', link: '/concepts/architecture' },
