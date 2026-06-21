@@ -53,6 +53,22 @@ export function RunResultCard({
         </>
       )}
 
+      {/* Telemetry footer */}
+      <div className="border-t border-border" />
+      <div className="flex flex-wrap gap-x-8 gap-y-2 text-xs font-mono text-text-muted">
+        <span>
+          Tokens: <span className="text-text-secondary">{(result.total_tokens ?? 0).toLocaleString()}</span>
+        </span>
+        <span>
+          Time: <span className="text-text-secondary">{((result.total_duration_ms ?? 0) / 1000).toFixed(1)}s</span>
+        </span>
+        <span>
+          Cost: <span className="text-text-secondary">{result.total_cost || "unavailable"}</span>
+        </span>
+        <span>
+          Artifacts: <span className="text-text-secondary">{result.artifact_count}</span>
+        </span>
+      </div>
     </div>
   );
 }

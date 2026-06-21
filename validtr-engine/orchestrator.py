@@ -9,7 +9,9 @@ from analyzer.task_analyzer import TaskAnalyzer
 from executor.engine import ExecutionEngine
 from executor.safety import SafetyLimits
 from models.score import FinalResult, StackSummary
+from providers import pricing
 from providers.base import get_provider
+from providers.usage import UsageTracker
 from recommender.engine import RecommendationEngine
 from retry.controller import RetryController
 from scorer.engine import ScoringEngine
@@ -38,8 +40,9 @@ async def run_task(
     run_start = time.perf_counter()
     logger.info("Starting validtr run %s: %s", run_id, task[:80])
 
-    # Initialize the LLM provider (used for analysis, recommendation, test gen, scoring)
-    llm = get_provider(provider, api_key=api_key, model=model)
+    # Initialize the LLM provider (used for analysis, recommendation, test gen, scoring).
+    # Wrap it so every engine-side completion accumulates token usage for telemetry.
+    llm = UsageTracker(get_provider(provider, api_key=api_key, model=model))
 
     # Build API keys dict for container injection
     api_keys = dict(extra_api_keys or {})
@@ -198,6 +201,20 @@ async def run_task(
             run_id=run_id,
             task_description=task,
         )
+
+    # === Telemetry: tokens, wall-clock duration, and cost ===
+    # Tokens cover every engine-side LLM call (analyze/recommend/test/score and
+    # the direct-execution agent call); in-container agent calls are not visible.
+    best_result.total_tokens = llm.total_tokens
+    best_result.total_duration_ms = int((time.perf_counter() - run_start) * 1000)
+    cost = pricing.compute_cost(provider, llm.by_model, pricing.load_catalog())
+    best_result.total_cost = f"${cost:.4f}" if cost is not None else "unavailable"
+    logger.info(
+        "Telemetry: %d tokens, %.2fs, cost=%s",
+        best_result.total_tokens,
+        best_result.total_duration_ms / 1000,
+        best_result.total_cost,
+    )
 
     logger.info(
         "Run %s complete in %.2fs: best stack=%s/%s, score=%.1f, attempts=%d",

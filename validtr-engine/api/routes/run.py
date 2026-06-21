@@ -69,6 +69,9 @@ class RunResponse(BaseModel):
     attempts: list[AttemptResponse]
     artifact_count: int
     artifacts: dict[str, str]
+    total_tokens: int = 0
+    total_duration_ms: int = 0
+    total_cost: str = ""
 
 
 @router.post("/run")
@@ -182,6 +185,9 @@ async def api_run_task(req: RunRequest):
         attempts=attempts_out,
         artifact_count=len(result.artifacts),
         artifacts=result.artifacts,
+        total_tokens=result.total_tokens,
+        total_duration_ms=result.total_duration_ms,
+        total_cost=result.total_cost,
     )
 
 
