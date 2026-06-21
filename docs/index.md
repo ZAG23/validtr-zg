@@ -14,7 +14,7 @@ title: validtr
   </h1>
   <p class="vh-sub">
     Describe a task in plain English. validtr recommends the optimal agent
-    harness — LLM, framework, MCP servers, skills — provisions it in Docker,
+    harness (LLM, framework, MCP servers, skills), provisions it in Docker,
     executes, generates tests, and scores the result. Below the threshold? It
     adjusts the stack and retries.
   </p>
@@ -28,7 +28,7 @@ title: validtr
     <div class="vh-frame">
       <div class="vh-frame-bar">
         <span class="vh-dot"></span><span class="vh-dot"></span><span class="vh-dot"></span>
-        <span class="vh-frame-url">localhost:4040 — validtr</span>
+        <span class="vh-frame-url">localhost:4040</span>
       </div>
       <img src="/ui-dashboard.png" alt="validtr Web UI dashboard: describe a task, pick a provider, run validation, and browse scored runs" loading="lazy" />
     </div>
@@ -64,11 +64,23 @@ title: validtr
   <div class="vh-frame vh-frame-video">
     <div class="vh-frame-bar">
       <span class="vh-dot"></span><span class="vh-dot"></span><span class="vh-dot"></span>
-      <span class="vh-frame-url">localhost:4040 — validtr</span>
+      <span class="vh-frame-url">localhost:4040</span>
     </div>
     <video autoplay loop muted playsinline poster="/ui-dashboard-empty.png">
       <source src="/demo-a.mp4" type="video/mp4" />
     </video>
+  </div>
+</section>
+
+<section class="vh-demo">
+  <p class="vh-eyebrow">Scored, end to end</p>
+  <h2 class="vh-h2">Every run, scored and projected</h2>
+  <div class="vh-frame">
+    <div class="vh-frame-bar">
+      <span class="vh-dot"></span><span class="vh-dot"></span><span class="vh-dot"></span>
+      <span class="vh-frame-url">validtr run</span>
+    </div>
+    <img src="/cli-output.png" alt="validtr CLI output: best stack found, validation score breakdown, and harness token projection" loading="lazy" />
   </div>
 </section>
 
