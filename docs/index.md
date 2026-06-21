@@ -35,6 +35,24 @@ title: validtr
   </div>
 </section>
 
+<section class="vh-trio">
+  <a class="vh-card" href="/validtr/reference/recommendation">
+    <div class="vh-ico">◈</div>
+    <h3>Agent harness validation</h3>
+    <p>Recommends and provisions the full harness (LLM, framework, MCP servers, skills), then executes it in an isolated Docker container.</p>
+  </a>
+  <a class="vh-card" href="/validtr/concepts/pipeline">
+    <div class="vh-ico">≣</div>
+    <h3>Token count</h3>
+    <p>Captures real token usage per run and projects it across Light, Standard, and Heavy workflows, priced from a live catalog.</p>
+  </a>
+  <a class="vh-card" href="/validtr/concepts/scoring">
+    <div class="vh-ico">◆</div>
+    <h3>Scoring</h3>
+    <p>Generates tests from the spec and computes a composite score across test passing, execution, syntax, and completeness, retrying below the threshold.</p>
+  </a>
+</section>
+
 <section class="vh-flow" aria-label="validtr pipeline">
   <div class="vh-flow-head">
     <span class="vh-flow-label">Input</span>
@@ -82,29 +100,6 @@ title: validtr
     </div>
     <img src="/cli-result.png" alt="validtr CLI output: best stack found, validation score breakdown, and harness token projection" loading="lazy" />
   </div>
-</section>
-
-<section class="vh-bento">
-  <a class="vh-card" href="/validtr/reference/recommendation">
-    <div class="vh-ico">◈</div>
-    <h3>Harness recommendation</h3>
-    <p>Web search + MCP registry + skills + LLM reasoning pick the LLM, framework, MCP servers, and skills for each task.</p>
-  </a>
-  <a class="vh-card" href="/validtr/reference/execution-runtime">
-    <div class="vh-ico">▣</div>
-    <h3>Containerized execution</h3>
-    <p>Each run executes in an isolated, resource-limited Docker container; tests run in a separate sandbox.</p>
-  </a>
-  <a class="vh-card" href="/validtr/concepts/scoring">
-    <div class="vh-ico">◆</div>
-    <h3>Test · score · retry</h3>
-    <p>Generates tests from the spec, computes a composite score, and iterates until the threshold or attempt limit.</p>
-  </a>
-  <a class="vh-card" href="/validtr/concepts/pipeline">
-    <div class="vh-ico">≣</div>
-    <h3>Token &amp; cost projection</h3>
-    <p>Projects token usage and cost across Light / Standard / Heavy workflows for the validated harness.</p>
-  </a>
 </section>
 
 <section class="vh-start">
