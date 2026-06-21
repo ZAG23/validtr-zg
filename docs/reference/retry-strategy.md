@@ -18,7 +18,7 @@ Retry only when both are true:
 
 ## Model Upgrade Paths
 
-- Anthropic: `claude-sonnet-4-20250514 -> claude-opus-4-20250514`
+- Anthropic: `claude-sonnet-4-6 -> claude-opus-4-8`
 - OpenAI: `gpt-4o-mini -> gpt-4o -> o3`
 - Gemini: `gemini-2.5-flash -> gemini-2.5-pro`
 

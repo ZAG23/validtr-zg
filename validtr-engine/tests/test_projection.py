@@ -34,7 +34,7 @@ def test_heavier_preset_costs_more_tokens():
     assert rows["Light"] < rows["Standard"] < rows["Heavy"]
 
 
-CATALOG = {"anthropic/claude-sonnet-4": {"input": 3e-06, "output": 1.5e-05}}
+CATALOG = {"anthropic/claude-sonnet-4-6": {"input": 3e-06, "output": 1.5e-05}}
 
 
 def test_build_projection_prices_rows():
@@ -43,7 +43,7 @@ def test_build_projection_prices_rows():
         avg_output_per_turn=300,
         components=[HarnessComponent(kind="system_prompt", name="system", tokens=1000)],
         provider="anthropic",
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-6",
         catalog=CATALOG,
     )
     light = next(r for r in proj.rows if r.preset == "Light")
@@ -75,7 +75,7 @@ def test_projection_from_report_builds_priced_rows():
         skill_names=["k8skill"],
     )
     proj = projection_from_report(
-        report, provider="anthropic", model="claude-sonnet-4-20250514", catalog=CATALOG
+        report, provider="anthropic", model="claude-sonnet-4-6", catalog=CATALOG
     )
     # overhead = 400 (system) + 700 (1 mcp) + 400 (1 skill) = 1500
     assert proj.overhead_tokens == 1500

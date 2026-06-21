@@ -112,7 +112,7 @@ class TestStackRecommendation:
         stack = StackRecommendation(
             llm=LLMRecommendation(
                 provider="anthropic",
-                model="claude-sonnet-4-20250514",
+                model="claude-sonnet-4-6",
                 reason="Best for code",
             ),
             framework=FrameworkRecommendation(name="none"),
@@ -374,7 +374,7 @@ class TestExecutionResult:
     def test_with_trace(self):
         trace = ExecutionTrace(
             llm_calls=[
-                LLMCall(provider="anthropic", model="claude-sonnet-4-20250514", input_tokens=500, output_tokens=200),
+                LLMCall(provider="anthropic", model="claude-sonnet-4-6", input_tokens=500, output_tokens=200),
             ],
             tool_calls=[
                 ToolCall(tool_name="write_file", arguments={"path": "main.py"}, result="File written"),
