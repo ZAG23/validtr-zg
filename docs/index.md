@@ -30,7 +30,7 @@ title: validtr
         <span class="vh-dot"></span><span class="vh-dot"></span><span class="vh-dot"></span>
         <span class="vh-frame-url">localhost:4040</span>
       </div>
-      <img src="/ui-dashboard.png" alt="validtr Web UI dashboard: describe a task, pick a provider, run validation, and browse scored runs" loading="lazy" />
+      <img src="/dashboard.png" alt="validtr Web UI dashboard: describe a task, pick a provider, run validation, and browse scored runs" loading="lazy" />
     </div>
   </div>
 </section>
@@ -66,7 +66,7 @@ title: validtr
       <span class="vh-dot"></span><span class="vh-dot"></span><span class="vh-dot"></span>
       <span class="vh-frame-url">localhost:4040</span>
     </div>
-    <video autoplay loop muted playsinline poster="/ui-dashboard-empty.png">
+    <video autoplay loop muted playsinline poster="/dashboard.png">
       <source src="/demo-a.mp4" type="video/mp4" />
     </video>
   </div>
@@ -80,7 +80,7 @@ title: validtr
       <span class="vh-dot"></span><span class="vh-dot"></span><span class="vh-dot"></span>
       <span class="vh-frame-url">validtr run</span>
     </div>
-    <img src="/cli-output.png" alt="validtr CLI output: best stack found, validation score breakdown, and harness token projection" loading="lazy" />
+    <img src="/cli-result.png" alt="validtr CLI output: best stack found, validation score breakdown, and harness token projection" loading="lazy" />
   </div>
 </section>
 
