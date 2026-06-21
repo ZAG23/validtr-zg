@@ -13,7 +13,7 @@ Test the quality and cost of your Agent Harness.
   <img alt="Runtime" src="https://img.shields.io/badge/runtime-Docker-16a34a">
 </p>
 
-<p align="center"><strong>Natural language in. Production-grade agentic stack out.</strong></p>
+<p align="center"><strong>Natural language in. Production-grade agentic harness out.</strong></p>
 
 An Agent Harness CLI tool that takes a natural language task description, recommends the optimal agentic stack (LLM, agent framework, MCP servers, agent skills), provisions that stack in Docker containers, executes the task, generates tests, and scores the result.
 
