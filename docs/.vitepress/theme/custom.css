@@ -914,3 +914,21 @@ body::after {
 @media (max-width: 860px) {
   .vh-trio { grid-template-columns: 1fr; }
 }
+
+/* ---- Section lead-in (heading + intro above the pipeline) ---- */
+.vh-lead {
+  margin-top: 60px;
+}
+.vh-lead .vh-h2 {
+  margin: 8px 0 0;
+}
+.vh-lead-sub {
+  margin: 14px 0 0;
+  max-width: 46em;
+  font-size: clamp(15px, 1.3vw, 17px);
+  line-height: 1.62;
+  color: var(--vt-text-2);
+}
+.vh-lead + .vh-flow {
+  margin-top: 22px;
+}

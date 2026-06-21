@@ -53,6 +53,16 @@ title: validtr
   </a>
 </section>
 
+<section class="vh-lead">
+  <p class="vh-eyebrow">How it works</p>
+  <h2 class="vh-h2">One loop, end to end</h2>
+  <p class="vh-lead-sub">
+    Every task runs through the same pipeline: analyze the request, recommend
+    and provision a harness, execute it in Docker, generate tests, and score the
+    result, adjusting the stack and retrying until it clears your threshold.
+  </p>
+</section>
+
 <section class="vh-flow" aria-label="validtr pipeline">
   <div class="vh-flow-head">
     <span class="vh-flow-label">Input</span>
