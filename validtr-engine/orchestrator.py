@@ -24,7 +24,7 @@ async def run_task(
     api_key: str | None = None,
     model: str | None = None,
     max_attempts: int = 1,
-    score_threshold: float = 90.0,
+    score_threshold: float = 95.0,
     timeout: int = 300,
     search_api_key: str | None = None,
     extra_api_keys: dict[str, str] | None = None,

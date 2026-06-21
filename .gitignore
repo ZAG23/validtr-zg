@@ -6,8 +6,9 @@ __pycache__/
 dist/
 build/
 
-# Go
+# Go — compiled CLI binary (build with `go build -o validtr ./validtr-cli`)
 validtr-cli/validtr
+/validtr
 
 # IDE
 .idea/

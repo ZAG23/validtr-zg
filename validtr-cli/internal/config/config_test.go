@@ -14,8 +14,8 @@ func TestDefaultConfig(t *testing.T) {
 	if cfg.Provider != "anthropic" {
 		t.Errorf("expected default provider %q, got %q", "anthropic", cfg.Provider)
 	}
-	if cfg.ScoreThreshold != 90.0 {
-		t.Errorf("expected default score threshold 90.0, got %f", cfg.ScoreThreshold)
+	if cfg.ScoreThreshold != 95.0 {
+		t.Errorf("expected default score threshold 95.0, got %f", cfg.ScoreThreshold)
 	}
 	if cfg.MaxAttempts != 1 {
 		t.Errorf("expected default max attempts 1, got %d", cfg.MaxAttempts)

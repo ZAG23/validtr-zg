@@ -22,7 +22,7 @@ Click **Options** to expand advanced settings:
 |---|---|---|
 | Model override | _(provider default)_ | Specific model ID to use |
 | Max retries | 1 | Number of retry attempts if score is below threshold |
-| Score threshold | 90 | Minimum score before retrying |
+| Score threshold | 95 | Minimum score before retrying |
 | Timeout | 300s | Maximum execution time per attempt |
 | Dry run | off | Recommend a stack without executing |
 

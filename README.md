@@ -8,7 +8,7 @@ Test the quality and cost of your Agent Harness.
 
 <p align="center">
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-0F172A"></a>
-  <img alt="Python" src="https://img.shields.io/badge/python-3.11%2B-1f6feb">
+  <img alt="Python" src="https://img.shields.io/badge/python-3.12%2B-1f6feb">
   <img alt="Go" src="https://img.shields.io/badge/go-1.22%2B-0ea5e9">
   <img alt="Runtime" src="https://img.shields.io/badge/runtime-Docker-16a34a">
 </p>
@@ -29,7 +29,7 @@ If the score falls below 95%, it iterates — adjusting the stack and retrying u
 ## Prerequisites
 
 - **Docker** — containers are the execution environment
-- **Python 3.11+**
+- **Python 3.12+**
 - **Go 1.22+**
 - **At least one LLM provider API key** (Anthropic, OpenAI, or Gemini)
 
