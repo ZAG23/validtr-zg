@@ -14,6 +14,99 @@
 
 ---
 
+## Revision 2 (2026-06-21) — heuristic sizing (AUTHORITATIVE for Tasks 4/6/7)
+
+Exploration found the in-container agent is **single-shot and not an MCP client**:
+it never calls `tools/list`, MCP servers are only installed into the image (never
+invoked), and skill bodies are not present (skills are names only). Real
+tool-schema introspection is therefore not viable. Per user decision, MCP/skill
+sizing is **heuristic**; the system prompt and measured usage remain real.
+
+Tasks 1, 2, 3, 5 are unchanged and already committed. The following **supersede**
+the original Tasks 4, 6, 7 below:
+
+**Revised `HarnessReport` (replaces Task 4's model).** The report carries only what
+the agent uniquely knows:
+
+```python
+class HarnessReport(BaseModel):
+    system_prompt_tokens: int = 0
+    measured_input_tokens: int = 0
+    measured_output_tokens: int = 0
+    turns: int = 1
+    mcp_server_names: list[str] = Field(default_factory=list)
+    skill_names: list[str] = Field(default_factory=list)
+
+    @property
+    def measured_total_tokens(self) -> int:
+        return self.measured_input_tokens + self.measured_output_tokens
+```
+`read_harness_report(path) -> HarnessReport | None` is unchanged in behavior
+(missing/malformed → None). Update `tests/test_harness_report.py` to the new shape.
+
+**Revised Task 6 — agent emits the minimal report.** No `tools/list`. In the
+`_write_agent_loop` template (`provisioner/compose_generator.py`), after generation:
+count the real system-prompt tokens (Anthropic `client.messages.count_tokens`;
+OpenAI `tiktoken`/`o200k_base`; Gemini `client.models.count_tokens`; fallback
+`len(text)//4`), capture `measured_input/output` from the LLM `response.usage`,
+set `turns=1` (single-shot), read `mcp_server_names`/`skill_names` from `stack.json`,
+and write `/workspace/output/harness-report.json` with the field names above. Still
+add `tiktoken` to `provisioner/templates/agent-base.Dockerfile`. The
+`build_report_dict` helper from the original Task 6 is **not needed** — drop it.
+
+**New engine-side overhead builder (part of Task 7).** Create
+`validtr-engine/estimator/harness_overhead.py`:
+
+```python
+"""Engine-side heuristic sizing of harness overhead components."""
+from models.projection import HarnessComponent
+from estimator.harness_report import HarnessReport
+
+# Documented, tunable per-component token estimates.
+MCP_SERVER_TOKEN_ESTIMATE = 700   # approx tool-schema overhead per MCP server
+SKILL_TOKEN_ESTIMATE = 400        # approx instruction overhead per skill
+
+
+def components_from_report(report: HarnessReport) -> list[HarnessComponent]:
+    comps = [HarnessComponent(kind="system_prompt", name="system", tokens=report.system_prompt_tokens)]
+    comps += [HarnessComponent(kind="mcp_server", name=n, tokens=MCP_SERVER_TOKEN_ESTIMATE) for n in report.mcp_server_names]
+    comps += [HarnessComponent(kind="skill", name=n, tokens=SKILL_TOKEN_ESTIMATE) for n in report.skill_names]
+    return comps
+
+
+def overhead_tokens(components: list[HarnessComponent]) -> int:
+    return sum(c.tokens for c in components)
+
+
+def avg_output_per_turn(report: HarnessReport) -> int:
+    return report.measured_output_tokens // report.turns if report.turns > 0 else 0
+```
+Tested in `tests/test_harness_overhead.py` (component assembly, overhead sum,
+avg-output incl. zero-turns guard).
+
+**Revised `projection_from_report` (in `estimator/projection.py`, Task 7).** Build
+from the engine-side overhead rather than report fields that no longer exist:
+
+```python
+from estimator.harness_overhead import components_from_report, overhead_tokens, avg_output_per_turn
+
+def projection_from_report(report, provider, model, catalog):
+    components = components_from_report(report)
+    return build_projection(
+        overhead_tokens=overhead_tokens(components),
+        avg_output_per_turn=avg_output_per_turn(report) or None,
+        components=components,
+        provider=provider, model=model, catalog=catalog,
+    )
+```
+Orchestrator wiring (read report, fold `measured_total_tokens` into
+`best_result.total_tokens`, set `harness_projection`, defer best-attempt cleanup so
+the report file survives) is as in the original Task 7 below.
+
+Tasks 8–11 (API/CLI/UI/docs) are unchanged.
+
+---
+
 ## File Structure
 
 - Create: `validtr-engine/models/projection.py` — Pydantic models (`HarnessComponent`, `ProjectionRow`, `HarnessProjection`).

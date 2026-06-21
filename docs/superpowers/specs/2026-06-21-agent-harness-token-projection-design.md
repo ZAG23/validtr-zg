@@ -39,16 +39,29 @@ model.
    breakdown of this run.
 2. **Workflow model:** preset sizes by agent-loop turns — **Light = 3, Standard =
    10, Heavy = 25** (tunable constants).
-3. **Estimation basis:** model from harness composition (system prompt + MCP tool
-   schemas + skill bodies), so the harness's own contribution is explicit.
-4. **Component sizing:** **real introspection** — actual MCP `tools/list` schemas
-   and full skill bodies, tokenized with the provider's own tokenizer.
-5. **Introspection mechanism:** **reuse the run's already-launched MCP servers**.
-   The agent emits a `harness-report.json` artifact the engine reads back. This
-   reuses the same agent→engine channel needed to fix the in-container token gap.
+3. **Estimation basis:** model from harness composition (system prompt + MCP
+   servers + skills), so the harness's own contribution is explicit.
+4. **Component sizing (REVISED — see Revision 2):** **heuristic.** The in-container
+   agent is single-shot and is not an MCP client (it never calls `tools/list`,
+   and skill bodies are not present in-container). The **real system prompt** is
+   tokenized; **MCP servers and skills** are sized with documented, configurable
+   per-component token estimates.
+5. **Capture mechanism:** the agent emits a minimal `harness-report.json` with only
+   what it uniquely knows (real system-prompt token count, its measured token
+   usage, turn count, MCP/skill names). The engine applies the heuristic estimates
+   and builds the projection. This still closes the in-container token gap.
 6. **Projection math:** **growing-context** model (context accumulates each turn).
 7. **Bundled:** closes the previously-paused in-container token telemetry gap via
-   the same report.
+   the report's measured usage.
+
+> **Revision 2 (2026-06-21):** Exploration during implementation found the agent
+> loop is single-shot and does not connect to MCP servers (they are installed into
+> the image but never invoked) nor load skill bodies (skills are names only). The
+> originally specified real `tools/list` introspection is not viable without
+> net-new MCP-client infrastructure. Per user decision, MCP/skill sizing is now
+> **heuristic** while the system prompt and measured usage remain real. The report
+> shape and Tasks 4/6/7 below are superseded by the heuristic design; the
+> implementation plan's "Revision 2" addendum is authoritative.
 
 ## Architecture
 
