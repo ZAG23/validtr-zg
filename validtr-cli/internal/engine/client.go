@@ -44,21 +44,36 @@ type AttemptInfo struct {
 	AdjustmentNotes []string         `json:"adjustment_notes"`
 }
 
+// ProjectionRow holds a projected workflow size.
+type ProjectionRow struct {
+	Preset         string `json:"preset"`
+	Turns          int    `json:"turns"`
+	EstTotalTokens int    `json:"est_total_tokens"`
+	EstCost        string `json:"est_cost"`
+}
+
+// HarnessProjection holds the token/cost projection for the validated harness.
+type HarnessProjection struct {
+	OverheadTokens int             `json:"overhead_tokens"`
+	Rows           []ProjectionRow `json:"rows"`
+}
+
 // RunResult holds the result of a task run.
 type RunResult struct {
-	RunID           string            `json:"run_id"`
-	Score           float64           `json:"score"`
-	Passed          bool              `json:"passed"`
-	TotalAttempts   int               `json:"total_attempts"`
-	BestAttempt     int               `json:"best_attempt"`
-	Stack           StackInfo         `json:"stack"`
-	Dimensions      []DimensionScore  `json:"dimensions"`
-	Attempts        []AttemptInfo     `json:"attempts"`
-	ArtifactCount   int               `json:"artifact_count"`
-	Artifacts       map[string]string `json:"artifacts"`
-	TotalTokens     int               `json:"total_tokens"`
-	TotalDurationMs int               `json:"total_duration_ms"`
-	TotalCost       string            `json:"total_cost"`
+	RunID             string            `json:"run_id"`
+	Score             float64           `json:"score"`
+	Passed            bool              `json:"passed"`
+	TotalAttempts     int               `json:"total_attempts"`
+	BestAttempt       int               `json:"best_attempt"`
+	Stack             StackInfo         `json:"stack"`
+	Dimensions        []DimensionScore  `json:"dimensions"`
+	Attempts          []AttemptInfo     `json:"attempts"`
+	ArtifactCount     int               `json:"artifact_count"`
+	Artifacts         map[string]string `json:"artifacts"`
+	TotalTokens       int               `json:"total_tokens"`
+	TotalDurationMs   int               `json:"total_duration_ms"`
+	TotalCost         string            `json:"total_cost"`
+	HarnessProjection HarnessProjection `json:"harness_projection"`
 }
 
 // MCPServer holds MCP server information.

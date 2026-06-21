@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from analyzer.task_analyzer import TaskAnalyzer
+from models.projection import HarnessProjection
 from orchestrator import run_task
 from providers.base import get_provider
 from recommender.engine import RecommendationEngine
@@ -72,6 +73,7 @@ class RunResponse(BaseModel):
     total_tokens: int = 0
     total_duration_ms: int = 0
     total_cost: str = ""
+    harness_projection: HarnessProjection = Field(default_factory=HarnessProjection)
 
 
 @router.post("/run")
@@ -92,7 +94,7 @@ async def api_run_task(req: RunRequest):
         api_key = os.environ.get(env_var, "") if env_var else ""
 
     if not api_key:
-        env_var = PROVIDER_ENV_VARS.get(req.provider, f"<PROVIDER>_API_KEY")
+        env_var = PROVIDER_ENV_VARS.get(req.provider, "<PROVIDER>_API_KEY")
         raise HTTPException(
             status_code=401,
             detail=f"No API key for {req.provider}. Pass it in the request or set {env_var} in the engine environment.",
@@ -188,6 +190,7 @@ async def api_run_task(req: RunRequest):
         total_tokens=result.total_tokens,
         total_duration_ms=result.total_duration_ms,
         total_cost=result.total_cost,
+        harness_projection=result.harness_projection,
     )
 
 

@@ -242,18 +242,19 @@ Generate ALL files in a single response. Do not explain — just output the file
     os.makedirs("/workspace/output", exist_ok=True)
 
     if provider == "anthropic":
-        text = _generate_anthropic(client, model, system_prompt, task)
+        text, in_tok, out_tok = _generate_anthropic(client, model, system_prompt, task)
     elif provider == "openai":
-        text = _generate_openai(client, model, system_prompt, task)
+        text, in_tok, out_tok = _generate_openai(client, model, system_prompt, task)
     elif provider == "gemini":
-        text = _generate_gemini(client, model, system_prompt, task)
+        text, in_tok, out_tok = _generate_gemini(client, model, system_prompt, task)
     else:
-        text = ""
+        text, in_tok, out_tok = "", 0, 0
 
     _parse_and_write_files(text)
+    _write_harness_report(provider, client, model, system_prompt, stack, in_tok, out_tok)
 
 def _generate_anthropic(client, model, system_prompt, task):
-    """Single-shot generation with Anthropic."""
+    """Single-shot generation with Anthropic. Returns (text, input_tokens, output_tokens)."""
     response = client.messages.create(
         model=model,
         system=system_prompt,
@@ -264,11 +265,14 @@ def _generate_anthropic(client, model, system_prompt, task):
     for block in response.content:
         if hasattr(block, "text"):
             text += block.text
+    usage = getattr(response, "usage", None)
+    in_tok = getattr(usage, "input_tokens", 0) if usage else 0
+    out_tok = getattr(usage, "output_tokens", 0) if usage else 0
     print("[validtr] Agent completed task (single-shot)")
-    return text
+    return text, in_tok, out_tok
 
 def _generate_openai(client, model, system_prompt, task):
-    """Single-shot generation with OpenAI."""
+    """Single-shot generation with OpenAI. Returns (text, input_tokens, output_tokens)."""
     response = client.chat.completions.create(
         model=model,
         messages=[
@@ -278,11 +282,14 @@ def _generate_openai(client, model, system_prompt, task):
         max_tokens=12288,
     )
     text = response.choices[0].message.content or ""
+    usage = getattr(response, "usage", None)
+    in_tok = getattr(usage, "prompt_tokens", 0) if usage else 0
+    out_tok = getattr(usage, "completion_tokens", 0) if usage else 0
     print("[validtr] Agent completed task (single-shot)")
-    return text
+    return text, in_tok, out_tok
 
 def _generate_gemini(client, model, system_prompt, task):
-    """Single-shot generation with Gemini."""
+    """Single-shot generation with Gemini. Returns (text, input_tokens, output_tokens)."""
     from google.genai import types
     response = client.models.generate_content(
         model=model,
@@ -290,8 +297,49 @@ def _generate_gemini(client, model, system_prompt, task):
         config=types.GenerateContentConfig(max_output_tokens=12288),
     )
     text = response.text or ""
+    um = getattr(response, "usage_metadata", None)
+    in_tok = getattr(um, "prompt_token_count", 0) if um else 0
+    out_tok = getattr(um, "candidates_token_count", 0) if um else 0
     print("[validtr] Agent completed task (single-shot)")
-    return text
+    return text, in_tok, out_tok
+
+def _count_tokens(provider, client, model, text):
+    """Count tokens for text using the provider tokenizer; fall back to chars/4."""
+    try:
+        if provider == "anthropic":
+            msgs = [{"role": "user", "content": text}]
+            return client.messages.count_tokens(model=model, messages=msgs).input_tokens
+        if provider == "openai":
+            import tiktoken
+            enc = tiktoken.get_encoding("o200k_base")
+            return len(enc.encode(text))
+        if provider == "gemini":
+            r = client.models.count_tokens(model=model, contents=[text])
+            return r.total_tokens
+    except Exception as e:
+        print(f"[validtr] token count fallback ({e})")
+    return max(1, len(text) // 4) if text else 0
+
+def _write_harness_report(provider, client, model, system_prompt, stack, in_tok, out_tok):
+    """Write harness-report.json for token projection. Never breaks the run."""
+    try:
+        system_prompt_tokens = _count_tokens(provider, client, model, system_prompt)
+        mcp_servers = stack.get("mcp_servers", [])
+        mcp_server_names = [s.get("name", "") for s in mcp_servers if s.get("name")]
+        skill_names = list(stack.get("skills", []))
+        report = {
+            "system_prompt_tokens": system_prompt_tokens,
+            "measured_input_tokens": in_tok,
+            "measured_output_tokens": out_tok,
+            "turns": 1,
+            "mcp_server_names": mcp_server_names,
+            "skill_names": skill_names,
+        }
+        with open("/workspace/output/harness-report.json", "w") as f:
+            json.dump(report, f)
+        print(f"[validtr] Wrote harness-report.json (system={system_prompt_tokens} tokens)")
+    except Exception as e:
+        print(f"[validtr] Could not write harness-report.json ({e})")
 
 def _parse_and_write_files(text):
     """Parse structured file blocks and write them to /workspace/output/."""

@@ -28,6 +28,18 @@ export interface StackInfo {
   adjustment_notes: string[];
 }
 
+export interface ProjectionRow {
+  preset: string;
+  turns: number;
+  est_total_tokens: number;
+  est_cost: string;
+}
+
+export interface HarnessProjection {
+  overhead_tokens: number;
+  rows: ProjectionRow[];
+}
+
 export interface AttemptInfo {
   attempt_number: number;
   score: number;
@@ -52,6 +64,8 @@ export interface RunResponse {
   total_tokens?: number;
   total_duration_ms?: number;
   total_cost?: string;
+  /** Harness token projection — optional so older stored runs still parse. */
+  harness_projection?: HarnessProjection;
 }
 
 /** Dry-run response shape. */

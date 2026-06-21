@@ -9,12 +9,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install all provider SDKs and common deps up front
+# (tiktoken: local OpenAI token counting for the harness-report.json projection)
 RUN pip install --no-cache-dir \
     anthropic \
     openai \
     google-genai \
     httpx \
-    pydantic
+    pydantic \
+    tiktoken
 
 WORKDIR /workspace
 

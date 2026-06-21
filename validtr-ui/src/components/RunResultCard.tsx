@@ -69,6 +69,30 @@ export function RunResultCard({
           Artifacts: <span className="text-text-secondary">{result.artifact_count}</span>
         </span>
       </div>
+
+      {/* Harness token projection panel */}
+      {result.harness_projection?.rows?.length ? (
+        <>
+          <div className="border-t border-border" />
+          <div>
+            <h4 className="text-xs font-mono text-text-secondary mb-2">
+              Harness token projection · {result.harness_projection.overhead_tokens.toLocaleString()} tokens/turn overhead
+            </h4>
+            <table className="w-full text-xs font-mono text-text-muted">
+              <tbody>
+                {result.harness_projection.rows.map((r) => (
+                  <tr key={r.preset}>
+                    <td className="py-0.5">{r.preset}</td>
+                    <td className="py-0.5">{r.turns} turns</td>
+                    <td className="py-0.5 text-right text-text-secondary">{r.est_total_tokens.toLocaleString()} tok</td>
+                    <td className="py-0.5 text-right text-text-secondary">{r.est_cost}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }
