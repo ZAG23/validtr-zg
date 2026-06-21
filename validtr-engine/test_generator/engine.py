@@ -2,7 +2,9 @@
 
 import logging
 import os
-import re
+import shutil
+import tempfile
+import xml.etree.ElementTree as ET
 
 import docker
 
@@ -111,6 +113,9 @@ class TestGenerator:
             )
 
         container = None
+        # Writable mount for the JUnit report; the test/output mounts stay read-only.
+        results_dir = tempfile.mkdtemp(prefix="validtr-junit-")
+        junit_host_path = os.path.join(results_dir, "junit.xml")
         try:
             image_tag = "validtr-test-runner:latest"
             self._ensure_test_runner_image(client, image_tag)
@@ -119,10 +124,12 @@ class TestGenerator:
             container = client.containers.run(
                 image_tag,
                 command=["python", "-m", "pytest", "/workspace/tests/",
-                         "-v", "--tb=short", "--no-header", "-q"],
+                         "--junit-xml=/workspace/results/junit.xml",
+                         "-p", "no:cacheprovider", "--tb=short"],
                 volumes={
                     os.path.abspath(test_dir): {"bind": "/workspace/tests", "mode": "ro"},
                     os.path.abspath(output_dir): {"bind": "/workspace/output", "mode": "ro"},
+                    results_dir: {"bind": "/workspace/results", "mode": "rw"},
                 },
                 environment={"VALIDTR_OUTPUT_DIR": "/workspace/output"},
                 working_dir="/workspace/output",
@@ -134,7 +141,7 @@ class TestGenerator:
             output = container.logs(stdout=True, stderr=True).decode("utf-8", errors="replace")
 
             logger.debug("Test container output:\n%s", output[-2000:])
-            return self._parse_pytest_output(output)
+            return self._parse_junit_xml(junit_host_path, output)
 
         except Exception as e:
             logger.error("Test execution failed: %s", e)
@@ -150,6 +157,7 @@ class TestGenerator:
                     container.remove(force=True)
                 except Exception:
                     pass
+            shutil.rmtree(results_dir, ignore_errors=True)
 
     def _ensure_test_runner_image(self, client, tag: str) -> None:
         """Build the test runner image if it doesn't exist."""
@@ -182,26 +190,54 @@ WORKDIR /workspace
             rm=True,
         )
 
-    def _parse_pytest_output(self, output: str) -> TestSuiteResult:
-        """Parse pytest verbose output into a TestSuiteResult."""
-        tests = []
-        lines = output.split("\n")
+    def _parse_junit_xml(self, xml_path: str, runner_output: str) -> TestSuiteResult:
+        """Parse a pytest JUnit XML report into a TestSuiteResult.
 
-        for line in lines:
-            # Match pytest verbose output: "test_name PASSED" or "test_name FAILED"
-            match = re.match(r"^(.+?)\s+(PASSED|FAILED|ERROR|SKIPPED)", line.strip())
-            if match:
-                name = match.group(1).strip()
-                status_str = match.group(2)
-                status_map = {
-                    "PASSED": TestStatus.PASSED,
-                    "FAILED": TestStatus.FAILED,
-                    "ERROR": TestStatus.ERROR,
-                    "SKIPPED": TestStatus.SKIPPED,
-                }
+        Structured output replaces stdout scraping: a crash or no-tests-collected
+        run yields no report, which we surface as an error rather than a silent
+        zero — that distinction matters because tests are 40% of the score.
+        """
+        try:
+            tree = ET.parse(xml_path)
+        except (OSError, ET.ParseError) as e:
+            logger.error("No JUnit report produced: %s", e)
+            return TestSuiteResult(
+                tests=[SingleTestResult(
+                    name="pytest",
+                    status=TestStatus.ERROR,
+                    message=f"No JUnit report produced (tests may have failed to collect): {e}",
+                )],
+                total=1,
+                errors=1,
+                runner_output=runner_output,
+            )
+
+        tests: list[SingleTestResult] = []
+        # Root is <testsuites> wrapping <testsuite>, or a bare <testsuite>; iter handles both.
+        for suite in tree.getroot().iter("testsuite"):
+            for case in suite.findall("testcase"):
+                name = case.get("name", "unknown")
+                classname = case.get("classname", "")
+                full_name = f"{classname}::{name}" if classname else name
+                duration_ms = int(float(case.get("time", "0")) * 1000)
+
+                failure = case.find("failure")
+                error = case.find("error")
+                skipped = case.find("skipped")
+                if error is not None:
+                    status, message = TestStatus.ERROR, error.get("message", "")
+                elif failure is not None:
+                    status, message = TestStatus.FAILED, failure.get("message", "")
+                elif skipped is not None:
+                    status, message = TestStatus.SKIPPED, skipped.get("message", "")
+                else:
+                    status, message = TestStatus.PASSED, ""
+
                 tests.append(SingleTestResult(
-                    name=name,
-                    status=status_map.get(status_str, TestStatus.ERROR),
+                    name=full_name,
+                    status=status,
+                    message=message,
+                    duration_ms=duration_ms,
                 ))
 
         passed = sum(1 for t in tests if t.status == TestStatus.PASSED)
@@ -216,7 +252,7 @@ WORKDIR /workspace
             failed=failed,
             errors=errors,
             skipped=skipped,
-            runner_output=output,
+            runner_output=runner_output,
         )
 
 
