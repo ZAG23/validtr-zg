@@ -1,4 +1,6 @@
 from estimator import projection
+from estimator.projection import build_projection
+from models.projection import HarnessComponent
 
 
 def test_project_turns_growing_context():
@@ -29,3 +31,34 @@ def test_project_total_is_input_plus_output():
 def test_heavier_preset_costs_more_tokens():
     rows = {r["preset"]: r["est_total_tokens"] for r in projection.project(1000, 300)}
     assert rows["Light"] < rows["Standard"] < rows["Heavy"]
+
+
+CATALOG = {"anthropic/claude-sonnet-4": {"input": 3e-06, "output": 1.5e-05}}
+
+
+def test_build_projection_prices_rows():
+    proj = build_projection(
+        overhead_tokens=1000,
+        avg_output_per_turn=300,
+        components=[HarnessComponent(kind="system_prompt", name="system", tokens=1000)],
+        provider="anthropic",
+        model="claude-sonnet-4-20250514",
+        catalog=CATALOG,
+    )
+    light = next(r for r in proj.rows if r.preset == "Light")
+    expected = light.est_input_tokens * 3e-06 + light.est_output_tokens * 1.5e-05
+    assert light.est_cost == f"${expected:.4f}"
+    assert proj.overhead_tokens == 1000
+    assert proj.components[0].name == "system"
+
+
+def test_build_projection_unavailable_cost_when_unpriced():
+    proj = build_projection(
+        overhead_tokens=1000,
+        avg_output_per_turn=300,
+        components=[],
+        provider="anthropic",
+        model="unknown-model",
+        catalog=CATALOG,
+    )
+    assert all(r.est_cost == "unavailable" for r in proj.rows)
