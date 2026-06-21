@@ -15,9 +15,9 @@ Test the quality and cost of your Agent Harness.
 
 <p align="center"><strong>Natural language in. Production-grade agentic stack out.</strong></p>
 
-A CLI tool that takes a natural language task description, recommends the optimal agentic stack/harness (LLM, agent framework, MCP servers, agent skills), provisions that stack in Docker containers, executes the task, generates tests, and scores the result.
+An Agent Harness CLI tool that takes a natural language task description, recommends the optimal agentic stack (LLM, agent framework, MCP servers, agent skills), provisions that stack in Docker containers, executes the task, generates tests, and scores the result.
 
-If the score of the test falls below 95%, it iterates — adjusting the stack and retrying until the threshold is met or max retries are exhausted.
+If the score falls below 95%, it iterates — adjusting the stack and retrying until the threshold is met or max retries are exhausted.
 
 ## Why validtr
 
