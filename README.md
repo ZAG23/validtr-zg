@@ -1,5 +1,7 @@
 # validtr
 
+Test the quality and cost of your Agent Harness.
+
 <p align="center">
  <img src="images/validtr-logo.png?raw=true" alt="Logo" width="70%" height="70%" />
 </p>
@@ -13,9 +15,9 @@
 
 <p align="center"><strong>Natural language in. Production-grade agentic stack out.</strong></p>
 
-A CLI tool that takes a natural language task description, recommends the optimal agentic stack (LLM, agent framework, MCP servers, agent skills), provisions that stack in Docker containers, executes the task, generates tests, and scores the result.
+A CLI tool that takes a natural language task description, recommends the optimal agentic stack/harness (LLM, agent framework, MCP servers, agent skills), provisions that stack in Docker containers, executes the task, generates tests, and scores the result.
 
-If the score falls below 95%, it iterates — adjusting the stack and retrying until the threshold is met or max retries are exhausted.
+If the score of the test falls below 95%, it iterates — adjusting the stack and retrying until the threshold is met or max retries are exhausted.
 
 ## Why validtr
 
@@ -263,11 +265,11 @@ Currently only Code tasks have a dedicated scorer. Other task types fall back to
 
 ## Supported Providers
 
-| Provider  | Default Model              | Env Var            |
-|-----------|----------------------------|--------------------|
-| Anthropic | claude-sonnet-4-20250514   | ANTHROPIC_API_KEY  |
-| OpenAI    | gpt-4o                     | OPENAI_API_KEY     |
-| Gemini    | gemini-2.5-flash           | GOOGLE_API_KEY     |
+| Provider  | Env Var
+|-----------|----------------------------|
+| Anthropic | ANTHROPIC_API_KEY
+| OpenAI    | OPENAI_API_KEY
+| Gemini    | GOOGLE_API_KEY
 
 ## How Validtr Differentiates From Evals
 
