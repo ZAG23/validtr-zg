@@ -5,20 +5,23 @@ import logging
 
 from pydantic import BaseModel, Field, ValidationError
 
-from models.projection import HarnessComponent
-
 logger = logging.getLogger(__name__)
 
 
 class HarnessReport(BaseModel):
-    """Token telemetry emitted by the agent for harness projection."""
+    """Token telemetry the agent emits in-container for harness projection.
 
-    harness_overhead_tokens: int = 0
-    components: list[HarnessComponent] = Field(default_factory=list)
+    Carries only what the agent uniquely knows: the real system-prompt token
+    count, its measured usage, the turn count, and the MCP/skill names. The engine
+    applies heuristic per-component estimates (see estimator.harness_overhead).
+    """
+
+    system_prompt_tokens: int = 0
     measured_input_tokens: int = 0
     measured_output_tokens: int = 0
-    avg_output_tokens_per_turn: int = 0
-    tokenizer: str = ""
+    turns: int = 1
+    mcp_server_names: list[str] = Field(default_factory=list)
+    skill_names: list[str] = Field(default_factory=list)
 
     @property
     def measured_total_tokens(self) -> int:
