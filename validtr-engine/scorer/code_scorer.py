@@ -36,37 +36,48 @@ class CodeScorer:
         threshold: float = 95.0,
     ) -> ScoreResult:
         """Compute composite score for a code generation task."""
-        dimensions = []
-
-        # 1. Test passing (40%)
-        test_score = test_results.pass_rate * TEST_PASSING_WEIGHT
-        dimensions.append(DimensionScore(
-            name="Test passing",
-            score=test_score,
-            max_score=TEST_PASSING_WEIGHT,
-            details=f"{test_results.passed}/{test_results.total} tests passed",
-        ))
-
-        # 2. Execution (25%) — did the task run without errors?
-        exec_score = EXECUTION_WEIGHT if execution.success else 0
-        dimensions.append(DimensionScore(
-            name="Execution",
-            score=exec_score,
-            max_score=EXECUTION_WEIGHT,
-            details="Execution succeeded" if execution.success else f"Failed: {execution.error}",
-        ))
-
-        # 3. Syntax validity (15%) — are the output files valid?
-        syntax_score = self._check_syntax(execution.artifacts)
-        dimensions.append(DimensionScore(
-            name="Syntax validity",
-            score=syntax_score,
-            max_score=SYNTAX_WEIGHT,
-            details="Syntax check on output files",
-        ))
-
-        # 4. Completeness (20%) — LLM-as-judge
         completeness_score = await self.judge_completeness(task, execution)
+        return self._build_score(execution, test_results, completeness_score, threshold)
+
+    def _deterministic_dimensions(
+        self,
+        execution: ExecutionResult,
+        test_results: TestSuiteResult,
+    ) -> list[DimensionScore]:
+        """The three dimensions that need no LLM: test passing, execution, syntax."""
+        return [
+            # Test passing (40%)
+            DimensionScore(
+                name="Test passing",
+                score=test_results.pass_rate * TEST_PASSING_WEIGHT,
+                max_score=TEST_PASSING_WEIGHT,
+                details=f"{test_results.passed}/{test_results.total} tests passed",
+            ),
+            # Execution (25%) — did the task run without errors?
+            DimensionScore(
+                name="Execution",
+                score=EXECUTION_WEIGHT if execution.success else 0,
+                max_score=EXECUTION_WEIGHT,
+                details="Execution succeeded" if execution.success else f"Failed: {execution.error}",
+            ),
+            # Syntax validity (15%) — are the output files valid?
+            DimensionScore(
+                name="Syntax validity",
+                score=self._check_syntax(execution.artifacts),
+                max_score=SYNTAX_WEIGHT,
+                details="Syntax check on output files",
+            ),
+        ]
+
+    def _build_score(
+        self,
+        execution: ExecutionResult,
+        test_results: TestSuiteResult,
+        completeness_score: float,
+        threshold: float,
+    ) -> ScoreResult:
+        """Assemble the composite score from the deterministic dimensions + completeness (20%)."""
+        dimensions = self._deterministic_dimensions(execution, test_results)
         dimensions.append(DimensionScore(
             name="Completeness",
             score=completeness_score,
@@ -75,14 +86,12 @@ class CodeScorer:
         ))
 
         composite = sum(d.score for d in dimensions)
-
         result = ScoreResult(
             composite_score=composite,
             dimensions=dimensions,
             threshold=threshold,
         )
         result.check_passed()
-
         logger.info("Score: %.1f/100 (%s)", composite, "PASS" if result.passed else "FAIL")
         return result
 
@@ -116,48 +125,7 @@ class CodeScorer:
         threshold: float = 95.0,
     ) -> ScoreResult:
         """Compute composite score using a pre-computed completeness score."""
-        dimensions = []
-
-        test_score = test_results.pass_rate * TEST_PASSING_WEIGHT
-        dimensions.append(DimensionScore(
-            name="Test passing",
-            score=test_score,
-            max_score=TEST_PASSING_WEIGHT,
-            details=f"{test_results.passed}/{test_results.total} tests passed",
-        ))
-
-        exec_score = EXECUTION_WEIGHT if execution.success else 0
-        dimensions.append(DimensionScore(
-            name="Execution",
-            score=exec_score,
-            max_score=EXECUTION_WEIGHT,
-            details="Execution succeeded" if execution.success else f"Failed: {execution.error}",
-        ))
-
-        syntax_score = self._check_syntax(execution.artifacts)
-        dimensions.append(DimensionScore(
-            name="Syntax validity",
-            score=syntax_score,
-            max_score=SYNTAX_WEIGHT,
-            details="Syntax check on output files",
-        ))
-
-        dimensions.append(DimensionScore(
-            name="Completeness",
-            score=completeness_score,
-            max_score=COMPLETENESS_WEIGHT,
-            details="LLM judge assessment",
-        ))
-
-        composite = sum(d.score for d in dimensions)
-        result = ScoreResult(
-            composite_score=composite,
-            dimensions=dimensions,
-            threshold=threshold,
-        )
-        result.check_passed()
-        logger.info("Score: %.1f/100 (%s)", composite, "PASS" if result.passed else "FAIL")
-        return result
+        return self._build_score(execution, test_results, completeness_score, threshold)
 
     async def judge_completeness(
         self,
