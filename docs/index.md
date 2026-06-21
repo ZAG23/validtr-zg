@@ -2,8 +2,8 @@
 layout: home
 
 hero:
-  name: validtr docs
-  text: Agentic stack validation, end to end
+  name: validtr
+  text: Agentic Harness validation
   tagline: Natural language in. Production-grade stack out.
   image:
     src: /validtr-logo.png
