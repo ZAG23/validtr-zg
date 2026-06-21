@@ -14,10 +14,6 @@ class OpenAIProvider(LLMProvider):
     """Provider for OpenAI models."""
 
     @property
-    def default_model(self) -> str:
-        return "gpt-4o"
-
-    @property
     def provider_name(self) -> str:
         return "openai"
 

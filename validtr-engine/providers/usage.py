@@ -26,10 +26,6 @@ class UsageTracker(LLMProvider):
         self.by_model: dict[str, dict[str, int]] = {}
 
     @property
-    def default_model(self) -> str:
-        return self._inner.default_model
-
-    @property
     def provider_name(self) -> str:
         return self._inner.provider_name
 

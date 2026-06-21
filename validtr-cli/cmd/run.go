@@ -30,6 +30,11 @@ the task is executed, tests are generated, and results are scored.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		task := strings.Join(args, " ")
 
+		// validtr has no default model — a model must be specified explicitly.
+		if strings.TrimSpace(runModel) == "" {
+			return fmt.Errorf("no model specified — pass --model (validtr has no default model for any provider)")
+		}
+
 		if runDryRun {
 			return runDryRunMode(cmd, task)
 		}
@@ -56,7 +61,7 @@ func init() {
 	runCmd.Flags().StringVar(&runProvider, "provider", "anthropic", "LLM provider (anthropic, openai, gemini)")
 	runCmd.Flags().StringVar(&runCompare, "compare", "", "Compare across providers (comma-separated)")
 	runCmd.Flags().BoolVar(&runDryRun, "dry-run", false, "Recommend a stack but don't execute")
-	runCmd.Flags().StringVar(&runModel, "model", "", "Specific model to use")
+	runCmd.Flags().StringVar(&runModel, "model", "", "LLM model to use (required — validtr has no default model)")
 	runCmd.Flags().IntVar(&runMaxAttempts, "max-attempts", 1, "Maximum number of attempts")
 	runCmd.Flags().Float64Var(&runScoreThreshold, "score-threshold", 95.0, "Minimum passing score (0-100)")
 	runCmd.Flags().IntVar(&runTimeout, "timeout", 300, "Execution timeout in seconds")
@@ -141,7 +146,7 @@ func runCompareMode(cmd *cobra.Command, task string, providers []string) error {
 		}
 
 		fmt.Printf("\n--- %s ---\n", provider)
-		result, err := client.RunTask(task, provider, "", apiKey, searchKey, runMaxAttempts, runScoreThreshold, runTimeout)
+		result, err := client.RunTask(task, provider, runModel, apiKey, searchKey, runMaxAttempts, runScoreThreshold, runTimeout)
 		if err != nil {
 			fmt.Printf("  Error: %v\n", err)
 			continue

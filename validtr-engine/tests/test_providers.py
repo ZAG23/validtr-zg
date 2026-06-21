@@ -9,76 +9,57 @@ class TestGetProvider:
     """Tests for the get_provider() factory function."""
 
     def test_returns_anthropic_provider(self):
-        provider = get_provider("anthropic", api_key="fake-key")
+        provider = get_provider("anthropic", api_key="fake-key", model="claude-sonnet-4-20250514")
         assert provider.provider_name == "anthropic"
         assert isinstance(provider, LLMProvider)
 
     def test_returns_openai_provider(self):
-        provider = get_provider("openai", api_key="fake-key")
+        provider = get_provider("openai", api_key="fake-key", model="gpt-4o")
         assert provider.provider_name == "openai"
         assert isinstance(provider, LLMProvider)
 
     def test_returns_gemini_provider(self):
-        provider = get_provider("gemini", api_key="fake-key")
+        provider = get_provider("gemini", api_key="fake-key", model="gemini-2.5-flash")
         assert provider.provider_name == "gemini"
         assert isinstance(provider, LLMProvider)
 
     def test_raises_for_unknown_provider(self):
         with pytest.raises(ValueError, match="Unknown provider"):
-            get_provider("llama", api_key="fake-key")
+            get_provider("llama", api_key="fake-key", model="x")
 
     def test_raises_for_empty_provider(self):
         with pytest.raises(ValueError, match="Unknown provider"):
-            get_provider("", api_key="fake-key")
+            get_provider("", api_key="fake-key", model="x")
 
 
-class TestAnthropicProvider:
-    """Tests for AnthropicProvider attributes."""
+class TestModelRequired:
+    """validtr has no default model — a model must be specified for every provider."""
 
-    def test_default_model(self):
-        provider = get_provider("anthropic", api_key="fake-key")
-        assert provider.default_model == "claude-sonnet-4-20250514"
+    @pytest.mark.parametrize("provider", ["anthropic", "openai", "gemini"])
+    def test_raises_without_model(self, provider):
+        with pytest.raises(ValueError, match="No model specified"):
+            get_provider(provider, api_key="fake-key")
 
-    def test_provider_name(self):
-        provider = get_provider("anthropic", api_key="fake-key")
-        assert provider.provider_name == "anthropic"
+    @pytest.mark.parametrize("provider", ["anthropic", "openai", "gemini"])
+    def test_raises_with_empty_model(self, provider):
+        with pytest.raises(ValueError, match="No model specified"):
+            get_provider(provider, api_key="fake-key", model="")
 
-    def test_custom_model(self):
+
+class TestProviderAttributes:
+    """Provider name and explicit model are honored across providers."""
+
+    def test_anthropic_custom_model(self):
         provider = get_provider("anthropic", api_key="fake-key", model="claude-opus-4-20250514")
+        assert provider.provider_name == "anthropic"
         assert provider.model == "claude-opus-4-20250514"
 
-    def test_default_model_when_none(self):
-        provider = get_provider("anthropic", api_key="fake-key", model=None)
-        assert provider.model == "claude-sonnet-4-20250514"
-
-
-class TestOpenAIProvider:
-    """Tests for OpenAIProvider attributes."""
-
-    def test_default_model(self):
-        provider = get_provider("openai", api_key="fake-key")
-        assert provider.default_model == "gpt-4o"
-
-    def test_provider_name(self):
-        provider = get_provider("openai", api_key="fake-key")
-        assert provider.provider_name == "openai"
-
-    def test_custom_model(self):
+    def test_openai_custom_model(self):
         provider = get_provider("openai", api_key="fake-key", model="gpt-4o-mini")
+        assert provider.provider_name == "openai"
         assert provider.model == "gpt-4o-mini"
 
-
-class TestGeminiProvider:
-    """Tests for GeminiProvider attributes."""
-
-    def test_default_model(self):
-        provider = get_provider("gemini", api_key="fake-key")
-        assert provider.default_model == "gemini-2.5-flash"
-
-    def test_provider_name(self):
-        provider = get_provider("gemini", api_key="fake-key")
-        assert provider.provider_name == "gemini"
-
-    def test_custom_model(self):
+    def test_gemini_custom_model(self):
         provider = get_provider("gemini", api_key="fake-key", model="gemini-2.5-pro")
+        assert provider.provider_name == "gemini"
         assert provider.model == "gemini-2.5-pro"

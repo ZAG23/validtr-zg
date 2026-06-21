@@ -16,10 +16,6 @@ class FakeProvider(LLMProvider):
         self.complete_json_calls = 0
 
     @property
-    def default_model(self) -> str:
-        return "fake-model"
-
-    @property
     def provider_name(self) -> str:
         return "fake"
 
@@ -95,4 +91,3 @@ def test_proxies_identity_properties():
     tracker = UsageTracker(inner)
     assert tracker.provider_name == "fake"
     assert tracker.model == "fake-model"
-    assert tracker.default_model == "fake-model"
