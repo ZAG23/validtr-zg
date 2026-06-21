@@ -252,6 +252,14 @@ func printResult(result *engine.RunResult) {
 	}
 	fmt.Printf("│  Tokens: %d   Time: %.1fs   Cost: %s\n",
 		result.TotalTokens, float64(result.TotalDurationMs)/1000.0, cost)
+
+	if len(result.HarnessProjection.Rows) > 0 {
+		fmt.Println("│")
+		fmt.Printf("│  Harness token projection (per-turn overhead: %d tokens)\n", result.HarnessProjection.OverheadTokens)
+		for _, r := range result.HarnessProjection.Rows {
+			fmt.Printf("│    %-9s %2d turns  %8d tokens  %s\n", r.Preset, r.Turns, r.EstTotalTokens, r.EstCost)
+		}
+	}
 	fmt.Println("╰──────────────────────────────────────────────────╯")
 }
 
