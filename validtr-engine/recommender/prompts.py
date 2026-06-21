@@ -40,8 +40,8 @@ IMPORTANT — your recommendations must be SPECIFIC and ACTIONABLE:
 - prompt_strategy: Explain the step-by-step approach. Example: "1) Scaffold project structure 2) Implement data models 3) Build auth middleware 4) Create API endpoints 5) Add error handling 6) Write tests"
 
 Model selection:
-- Claude Sonnet 4 (claude-sonnet-4-20250514): Fast, excellent at code — good default for most code tasks
-- Claude Opus 4 (claude-opus-4-20250514): Most capable — complex architecture, multi-file projects
+- Claude Sonnet 4.6 (claude-sonnet-4-6): Fast, excellent at code — good default for most code tasks
+- Claude Opus 4.8 (claude-opus-4-8): Most capable — complex architecture, multi-file projects
 - GPT-4o: Strong broad knowledge — research + code hybrid tasks
 - Gemini 2.5 Flash (gemini-2.5-flash): Fastest and cheapest
 - Gemini 2.5 Pro (gemini-2.5-pro): Good balance of speed and capability

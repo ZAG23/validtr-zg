@@ -22,7 +22,7 @@ from provisioner.credentials import (
 
 def _make_stack(
     provider: str = "anthropic",
-    model: str = "claude-sonnet-4-20250514",
+    model: str = "claude-sonnet-4-6",
     mcp_servers: list[MCPServerRecommendation] | None = None,
 ) -> StackRecommendation:
     """Helper to build a minimal StackRecommendation."""

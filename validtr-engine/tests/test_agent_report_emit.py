@@ -18,7 +18,7 @@ def _emit_agent_loop() -> str:
     run_dir = os.path.join(gen.output_base, "run")
     os.makedirs(run_dir, exist_ok=True)
     stack = StackRecommendation(
-        llm=LLMRecommendation(provider="anthropic", model="claude-sonnet-4-20250514", reason="t"),
+        llm=LLMRecommendation(provider="anthropic", model="claude-sonnet-4-6", reason="t"),
         framework=FrameworkRecommendation(),
     )
     gen._write_agent_loop(run_dir, stack)

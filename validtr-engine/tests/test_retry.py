@@ -21,7 +21,7 @@ def _make_score(composite: float, threshold: float = 95.0) -> ScoreResult:
 
 def _make_stack(
     provider: str = "anthropic",
-    model: str = "claude-sonnet-4-20250514",
+    model: str = "claude-sonnet-4-6",
 ) -> StackRecommendation:
     return StackRecommendation(
         llm=LLMRecommendation(provider=provider, model=model, reason="test"),
@@ -258,10 +258,10 @@ class TestApplyAdjustments:
     """Tests for apply_adjustments()."""
 
     def test_upgrade_model_anthropic(self):
-        stack = _make_stack(provider="anthropic", model="claude-sonnet-4-20250514")
+        stack = _make_stack(provider="anthropic", model="claude-sonnet-4-6")
         adjustments = [{"action": "upgrade_model", "reason": "tests failed"}]
         new_stack = apply_adjustments(stack, adjustments)
-        assert new_stack.llm.model == "claude-opus-4-20250514"
+        assert new_stack.llm.model == "claude-opus-4-8"
         assert "upgrade_model: tests failed" in new_stack.adjustment_notes
 
     def test_upgrade_model_openai(self):
@@ -271,11 +271,11 @@ class TestApplyAdjustments:
         assert new_stack.llm.model == "gpt-4o"
 
     def test_upgrade_model_already_best(self):
-        stack = _make_stack(provider="anthropic", model="claude-opus-4-20250514")
+        stack = _make_stack(provider="anthropic", model="claude-opus-4-8")
         adjustments = [{"action": "upgrade_model", "reason": "tests failed"}]
         new_stack = apply_adjustments(stack, adjustments)
         # Already at the best model, should stay the same
-        assert new_stack.llm.model == "claude-opus-4-20250514"
+        assert new_stack.llm.model == "claude-opus-4-8"
 
     def test_re_search_does_not_upgrade_model(self):
         stack = _make_stack(provider="openai", model="gpt-4o")

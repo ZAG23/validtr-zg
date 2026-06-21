@@ -126,6 +126,15 @@ async def api_run_task(req: RunRequest):
             raise HTTPException(status_code=401, detail=f"Authentication failed: {e}") from e
         if "Permission" in err_type or "RateLimit" in err_type:
             raise HTTPException(status_code=429, detail=f"Rate limited or permission denied: {e}") from e
+        if "NotFound" in err_type:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Model not found for provider {req.provider!r}: {e}. "
+                    "The model may be misspelled or retired — check the provider's "
+                    "current model IDs and pass a valid --model."
+                ),
+            ) from e
         raise
 
     # Build the best attempt's dimension breakdown
@@ -216,6 +225,15 @@ async def _dry_run(req: RunRequest, api_key: str = ""):
             raise HTTPException(status_code=401, detail=f"Authentication failed: {e}") from e
         if "Permission" in err_type or "RateLimit" in err_type:
             raise HTTPException(status_code=429, detail=f"Rate limited or permission denied: {e}") from e
+        if "NotFound" in err_type:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Model not found for provider {req.provider!r}: {e}. "
+                    "The model may be misspelled or retired — check the provider's "
+                    "current model IDs and pass a valid --model."
+                ),
+            ) from e
         raise
 
     return {

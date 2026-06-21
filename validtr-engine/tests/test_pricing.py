@@ -7,7 +7,7 @@ import time
 from providers import pricing
 
 CATALOG = {
-    "anthropic/claude-sonnet-4": {"input": 3e-06, "output": 1.5e-05},
+    "anthropic/claude-sonnet-4-6": {"input": 3e-06, "output": 1.5e-05},
     "openai/gpt-4o": {"input": 2.5e-06, "output": 1e-05},
     "google/gemini-2.5-flash": {"input": 3e-07, "output": 2.5e-06},
 }
@@ -24,8 +24,10 @@ class TestResolveRates:
         assert rates["output"] == 2.5e-06
 
     def test_strips_date_suffix(self):
-        # validtr pins a dated id; OpenRouter lists the undated one.
-        rates = pricing.resolve_rates("anthropic", "claude-sonnet-4-20250514", CATALOG)
+        # A pinned dated id (e.g. claude-sonnet-4-20250514) should match the
+        # undated catalog entry OpenRouter publishes.
+        dated_catalog = {"anthropic/claude-sonnet-4": {"input": 3e-06, "output": 1.5e-05}}
+        rates = pricing.resolve_rates("anthropic", "claude-sonnet-4-20250514", dated_catalog)
         assert rates == {"input": 3e-06, "output": 1.5e-05}
 
     def test_unknown_model_returns_none(self):

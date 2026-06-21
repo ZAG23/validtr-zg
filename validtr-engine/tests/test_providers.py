@@ -9,7 +9,7 @@ class TestGetProvider:
     """Tests for the get_provider() factory function."""
 
     def test_returns_anthropic_provider(self):
-        provider = get_provider("anthropic", api_key="fake-key", model="claude-sonnet-4-20250514")
+        provider = get_provider("anthropic", api_key="fake-key", model="claude-sonnet-4-6")
         assert provider.provider_name == "anthropic"
         assert isinstance(provider, LLMProvider)
 
@@ -50,9 +50,9 @@ class TestProviderAttributes:
     """Provider name and explicit model are honored across providers."""
 
     def test_anthropic_custom_model(self):
-        provider = get_provider("anthropic", api_key="fake-key", model="claude-opus-4-20250514")
+        provider = get_provider("anthropic", api_key="fake-key", model="claude-opus-4-8")
         assert provider.provider_name == "anthropic"
-        assert provider.model == "claude-opus-4-20250514"
+        assert provider.model == "claude-opus-4-8"
 
     def test_openai_custom_model(self):
         provider = get_provider("openai", api_key="fake-key", model="gpt-4o-mini")

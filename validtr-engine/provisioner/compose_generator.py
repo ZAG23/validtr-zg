@@ -194,7 +194,7 @@ FILE_PATTERN = r'--- FILE: (.+?) ---\\n(.*?)\\n--- END FILE ---'
 def get_llm_client():
     """Initialize the LLM client based on environment."""
     provider = os.environ.get("VALIDTR_PROVIDER", "anthropic")
-    model = os.environ.get("VALIDTR_MODEL", "claude-sonnet-4-20250514")
+    model = os.environ.get("VALIDTR_MODEL", "claude-sonnet-4-6")
 
     if provider == "anthropic":
         import anthropic
