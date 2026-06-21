@@ -48,6 +48,10 @@ export interface RunResponse {
   attempts: AttemptInfo[];
   artifact_count: number;
   artifacts: Record<string, string>;
+  /** Telemetry — optional so runs stored before this field still parse. */
+  total_tokens?: number;
+  total_duration_ms?: number;
+  total_cost?: string;
 }
 
 /** Dry-run response shape. */

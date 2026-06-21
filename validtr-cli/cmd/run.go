@@ -15,7 +15,7 @@ var (
 	runCompare        string
 	runDryRun         bool
 	runModel          string
-	runMaxAttempts     int
+	runMaxAttempts    int
 	runScoreThreshold float64
 	runTimeout        int
 )
@@ -239,6 +239,14 @@ func printResult(result *engine.RunResult) {
 	}
 
 	fmt.Printf("│  Artifacts: %d files\n", result.ArtifactCount)
+
+	// Telemetry: tokens, wall-clock time, and cost
+	cost := result.TotalCost
+	if cost == "" {
+		cost = "unavailable"
+	}
+	fmt.Printf("│  Tokens: %d   Time: %.1fs   Cost: %s\n",
+		result.TotalTokens, float64(result.TotalDurationMs)/1000.0, cost)
 	fmt.Println("╰──────────────────────────────────────────────────╯")
 }
 
