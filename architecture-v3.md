@@ -116,7 +116,7 @@ validtr run --task-file task.yaml
 validtr run "Build a CLI in Go" \
   --provider openai \
   --model gpt-4o \
-  --max-retries 5 \
+  --max-attempts 5 \
   --score-threshold 90 \
   --timeout 600
 

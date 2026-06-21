@@ -14,4 +14,4 @@ Each `validtr run` executes this sequence:
 If score is below threshold (default `95`), validtr adjusts stack strategy and retries until:
 
 - score reaches threshold, or
-- `max_retries` is reached.
+- `max_attempts` is reached.

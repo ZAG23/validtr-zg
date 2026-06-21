@@ -14,7 +14,7 @@ validtr run "Build a FastAPI app with JWT auth"
 - `--compare`: comma-separated providers
 - `--dry-run`: recommendation only
 - `--model`: override model id
-- `--max-retries`: retry limit
+- `--max-attempts`: retry limit
 - `--score-threshold`: pass threshold
 - `--timeout`: execution timeout seconds
 

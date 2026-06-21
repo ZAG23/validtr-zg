@@ -5,7 +5,7 @@ export interface RunRequest {
   model?: string | null;
   api_key?: string | null;
   search_api_key?: string | null;
-  max_retries?: number;
+  max_attempts?: number;
   score_threshold?: number;
   timeout?: number;
   dry_run?: boolean;

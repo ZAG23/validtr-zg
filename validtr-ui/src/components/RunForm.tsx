@@ -22,7 +22,7 @@ export function RunForm() {
   const [apiKey, setApiKey] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [model, setModel] = useState("");
-  const [maxRetries, setMaxRetries] = useState(1);
+  const [maxAttempts, setMaxAttempts] = useState(1);
   const [scoreThreshold, setScoreThreshold] = useState(90);
   const [timeout, setTimeout_] = useState(300);
   const [dryRun, setDryRun] = useState(false);
@@ -52,13 +52,13 @@ export function RunForm() {
       };
       if (apiKey.trim()) req.api_key = apiKey.trim();
       if (model.trim()) req.model = model.trim();
-      if (maxRetries !== 1) req.max_retries = maxRetries;
+      if (maxAttempts !== 1) req.max_attempts = maxAttempts;
       if (scoreThreshold !== 90) req.score_threshold = scoreThreshold;
       if (timeout !== 300) req.timeout = timeout;
 
       void execute(req);
     },
-    [task, provider, apiKey, model, maxRetries, scoreThreshold, timeout, dryRun, isRunning, execute],
+    [task, provider, apiKey, model, maxAttempts, scoreThreshold, timeout, dryRun, isRunning, execute],
   );
 
   const formatElapsed = (s: number) => {
@@ -158,11 +158,11 @@ export function RunForm() {
             />
           </div>
           <div>
-            <label className="block text-xs text-text-muted mb-1">Max retries</label>
+            <label className="block text-xs text-text-muted mb-1">Max attempts</label>
             <input
               type="number"
-              value={maxRetries}
-              onChange={(e) => setMaxRetries(Number(e.target.value))}
+              value={maxAttempts}
+              onChange={(e) => setMaxAttempts(Number(e.target.value))}
               min={0}
               max={10}
               className="w-full bg-surface-0 border border-border rounded px-3 py-1.5 font-mono text-xs text-text-primary focus:outline-none focus:border-accent/50"

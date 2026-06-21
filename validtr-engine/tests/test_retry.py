@@ -37,42 +37,42 @@ class TestShouldRetry:
     """Tests for RetryController.should_retry()."""
 
     def test_returns_false_when_score_meets_threshold(self):
-        rc = RetryController(max_retries=3, threshold=95.0)
+        rc = RetryController(max_attempts=3, threshold=95.0)
         score = _make_score(96.0, 95.0)
         assert rc.should_retry(score, attempt_number=1) is False
 
     def test_returns_false_when_score_equals_threshold(self):
-        rc = RetryController(max_retries=3, threshold=95.0)
+        rc = RetryController(max_attempts=3, threshold=95.0)
         score = _make_score(95.0, 95.0)
         assert rc.should_retry(score, attempt_number=1) is False
 
-    def test_returns_false_when_max_retries_reached(self):
-        rc = RetryController(max_retries=3, threshold=95.0)
+    def test_returns_false_when_max_attempts_reached(self):
+        rc = RetryController(max_attempts=3, threshold=95.0)
         score = _make_score(50.0, 95.0)
         assert rc.should_retry(score, attempt_number=3) is False
 
-    def test_returns_false_when_max_retries_exceeded(self):
-        rc = RetryController(max_retries=2, threshold=95.0)
+    def test_returns_false_when_max_attempts_exceeded(self):
+        rc = RetryController(max_attempts=2, threshold=95.0)
         score = _make_score(50.0, 95.0)
         assert rc.should_retry(score, attempt_number=5) is False
 
     def test_returns_true_when_score_below_and_retries_remain(self):
-        rc = RetryController(max_retries=3, threshold=95.0)
+        rc = RetryController(max_attempts=3, threshold=95.0)
         score = _make_score(70.0, 95.0)
         assert rc.should_retry(score, attempt_number=1) is True
 
     def test_returns_true_on_second_attempt(self):
-        rc = RetryController(max_retries=3, threshold=95.0)
+        rc = RetryController(max_attempts=3, threshold=95.0)
         score = _make_score(80.0, 95.0)
         assert rc.should_retry(score, attempt_number=2) is True
 
     def test_returns_true_just_below_threshold(self):
-        rc = RetryController(max_retries=3, threshold=95.0)
+        rc = RetryController(max_attempts=3, threshold=95.0)
         score = _make_score(94.9, 95.0)
         assert rc.should_retry(score, attempt_number=1) is True
 
     def test_custom_threshold(self):
-        rc = RetryController(max_retries=5, threshold=80.0)
+        rc = RetryController(max_attempts=5, threshold=80.0)
         score = _make_score(79.0, 80.0)
         assert rc.should_retry(score, attempt_number=1) is True
 
@@ -165,7 +165,7 @@ class TestAnalyzeFailures:
         adjustments = analyze_failures(score, test_results, stack)
         assert any(a["action"] == "upgrade_model" for a in adjustments)
 
-    def test_execution_failure_suggests_add_mcp(self):
+    def test_execution_failure_suggests_re_search(self):
         score = ScoreResult(
             composite_score=55.0,
             dimensions=[
@@ -178,7 +178,13 @@ class TestAnalyzeFailures:
         test_results = TestSuiteResult(total=5, passed=5)
         stack = _make_stack()
         adjustments = analyze_failures(score, test_results, stack)
-        assert any(a["action"] == "add_mcp_server" for a in adjustments)
+        # Execution failures emit re_search (a handled action) with hints, so the
+        # recommendation engine actually re-searches for tools on retry.
+        re_search = [a for a in adjustments if a["action"] == "re_search"]
+        assert re_search
+        assert any(a.get("query_hints") for a in re_search)
+        # add_mcp_server is never emitted: nothing consumes it.
+        assert not any(a["action"] == "add_mcp_server" for a in adjustments)
 
     def test_syntax_failure_suggests_upgrade(self):
         score = ScoreResult(

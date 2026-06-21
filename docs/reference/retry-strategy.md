@@ -7,7 +7,7 @@ Retry logic is implemented in `retry/controller.py` and `retry/analysis.py`.
 Retry only when both are true:
 
 - `score < threshold`
-- `attempt_number < max_retries`
+- `attempt_number < max_attempts`
 
 ## Failure-to-Action Mapping
 

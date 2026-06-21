@@ -21,7 +21,7 @@ Request fields:
 - `model` string optional
 - `api_key` string optional
 - `search_api_key` string optional
-- `max_retries` int
+- `max_attempts` int
 - `score_threshold` float
 - `timeout` int
 - `dry_run` bool
