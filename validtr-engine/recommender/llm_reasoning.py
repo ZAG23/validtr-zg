@@ -13,6 +13,7 @@ from models.stack import (
 from models.task import TaskDefinition
 from providers.base import LLMProvider, Message
 from providers.model_catalog import format_for_prompt
+from recommender import framework_registry
 from recommender.prompts import RECOMMENDATION_SYSTEM, RECOMMENDATION_USER
 
 logger = logging.getLogger(__name__)
@@ -32,9 +33,12 @@ class LLMReasoningEngine:
         web_results: list[dict],
         mcp_servers: list[dict],
         available_skills: list[dict] | None = None,
+        available_frameworks: list[dict] | None = None,
         preferred_provider: str | None = None,
     ) -> StackRecommendation:
         """Generate a stack recommendation using LLM reasoning."""
+        frameworks = available_frameworks or framework_registry.static_frameworks()
+
         # Format skills catalog for the prompt — just name, description, source
         skills_text = "No skills available"
         if available_skills:
@@ -56,6 +60,7 @@ class LLMReasoningEngine:
                     task_definition=task.model_dump_json(indent=2),
                     web_results=json.dumps(web_results, indent=2) if web_results else "No results",
                     available_models=format_for_prompt(),
+                    available_frameworks=framework_registry.format_for_prompt(frameworks),
                     mcp_servers=json.dumps(mcp_servers, indent=2) if mcp_servers else "No results",
                     available_skills=skills_text,
                     preferred_provider=preferred_provider or "none (choose the best)",
@@ -83,6 +88,12 @@ class LLMReasoningEngine:
         llm_data = data["llm"]
         framework_data = data.get("framework", {})
         mcp_list = data.get("mcp_servers", [])
+
+        framework_name = framework_data.get("name")
+        if framework_name and not framework_registry.is_known(framework_name, frameworks):
+            logger.info(
+                "Recommended framework %r is outside the curated registry", framework_name
+            )
 
         return StackRecommendation(
             llm=LLMRecommendation(

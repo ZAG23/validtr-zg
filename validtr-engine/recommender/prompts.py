@@ -35,6 +35,7 @@ You MUST respond with valid JSON matching this schema:
 }
 
 IMPORTANT — your recommendations must be SPECIFIC and ACTIONABLE:
+- framework: Pick the best match from the Available Frameworks list in the user message, or "none" for simple single-shot tasks that don't need multi-agent orchestration or explicit state management. Only recommend a framework outside that list if none of them fit — explain why in `reason`.
 - mcp_servers: Pick 2-5 MCP servers from the Available MCP Servers list that would give the agent useful tools for THIS task. Think about what tools the agent actually needs: database access? auth service? web scraping? API validation? code execution sandbox? Only include "filesystem" if the task genuinely requires file I/O beyond what the agent framework already provides.
 - skills: Pick 2-5 agent skills from the Available Agent Skills catalog. These are real, installable skills — pick the ones that match THIS task. Only recommend skills that exist in the catalog provided.
 - prompt_strategy: Explain the step-by-step approach. Example: "1) Scaffold project structure 2) Implement data models 3) Build auth middleware 4) Create API endpoints 5) Add error handling 6) Write tests"
@@ -53,6 +54,9 @@ Web Search Results (best practices and tools for this kind of task):
 
 Available Models (cheapest first, per provider; deprecated models already excluded):
 {available_models}
+
+Available Frameworks (stale/unmaintained ones already excluded):
+{available_frameworks}
 
 Available MCP Servers (pick the ones most useful for THIS task — select 2-5):
 {mcp_servers}

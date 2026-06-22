@@ -6,6 +6,8 @@ import logging
 from models.stack import StackRecommendation
 from models.task import Complexity, TaskDefinition, TaskType
 from providers.base import LLMProvider
+from recommender import framework_registry
+from recommender.framework_registry import FrameworkRegistryClient
 from recommender.llm_reasoning import LLMReasoningEngine
 from recommender.mcp_registry import MCPRegistryClient
 from recommender.skills_registry import SkillsRegistryClient
@@ -59,6 +61,7 @@ class RecommendationEngine:
         self.web_search = WebSearchProvider(api_key=search_api_key, provider=search_provider)
         self.mcp_registry = MCPRegistryClient()
         self.skills_registry = SkillsRegistryClient()
+        self.framework_registry = FrameworkRegistryClient()
         self.llm_reasoning = LLMReasoningEngine(provider=provider)
 
     async def recommend(
@@ -78,10 +81,11 @@ class RecommendationEngine:
 
         fetch_registries = _should_fetch_registries(task)
         if fetch_registries:
-            web_results, relevant_mcp, all_skills = await asyncio.gather(
+            web_results, relevant_mcp, all_skills, all_frameworks = await asyncio.gather(
                 self.web_search.search(search_query),
                 self.mcp_registry.get_relevant(mcp_query, limit=20),
                 self.skills_registry.get_all(),
+                self.framework_registry.get_all(),
             )
             all_skills = _trim_skills_for_prompt(task, all_skills)
         else:
@@ -89,10 +93,13 @@ class RecommendationEngine:
             web_results = await self.web_search.search(search_query)
             relevant_mcp = []
             all_skills = []
+            all_frameworks = framework_registry.static_frameworks()
 
         logger.info(
-            "Web search: %d results, MCP servers: %d relevant, Skills catalog: %d skills",
+            "Web search: %d results, MCP servers: %d relevant, Skills catalog: %d skills, "
+            "Frameworks: %d (%d stale)",
             len(web_results), len(relevant_mcp), len(all_skills),
+            len(all_frameworks), sum(1 for f in all_frameworks if f.get("stale")),
         )
 
         # Use LLM to synthesize into a recommendation
@@ -101,6 +108,7 @@ class RecommendationEngine:
             web_results=web_results,
             mcp_servers=relevant_mcp,
             available_skills=all_skills,
+            available_frameworks=all_frameworks,
             preferred_provider=preferred_provider,
         )
         logger.info(
