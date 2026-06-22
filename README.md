@@ -71,6 +71,17 @@ timeout: 300
 engine_addr: "http://127.0.0.1:4041"
 ```
 
+### Optional extras
+
+A few subsystems are soft dependencies — the engine runs fine without them and falls
+back to built-in defaults:
+
+| Extra | `pip install -e ".[...]"` | Enables | Opt-in env var |
+|---|---|---|---|
+| `cascade` | `cascade` | Live, cost-ordered model registry (replaces the static model list) | always on if installed |
+| `compress` | `compress` | Semantic artifact compression for the completeness judge (pulls in torch/transformers — heavy) | `VALIDTR_COMPRESS_ARTIFACTS=1` |
+| — | install [SkillSpector](https://github.com/NVIDIA/SkillSpector) separately (not on PyPI) onto the engine's `PYTHONPATH` | Drops high-risk skills before they're surfaced in recommendations | `VALIDTR_SCAN_SKILLS=1` |
+
 ### 4) Start the engine
 
 ```bash
@@ -199,7 +210,9 @@ User's Machine
 └── External APIs
     ├── LLM APIs (Anthropic, OpenAI, Gemini)
     ├── Web Search (Tavily)
-    └── MCP Registries (mcp.so, Smithery)
+    ├── MCP Registries (mcp.so, Smithery)
+    ├── Skills catalogs (GitHub: anthropics/skills, awesome-copilot, pm-skills)
+    └── PyPI (model/framework freshness checks, optional cascadeflow registry)
 ```
 
 ## Project Structure
@@ -228,7 +241,7 @@ validtr/
 ├── validtr-engine/               # Python Engine
 │   ├── api/                      # FastAPI server + routes
 │   ├── analyzer/                 # Task classification + extraction
-│   ├── recommender/              # Web search + MCP registry + LLM reasoning
+│   ├── recommender/              # Web search + MCP/skills/framework registries + LLM reasoning
 │   ├── provisioner/              # Docker Compose generation + Dockerfiles
 │   ├── executor/                 # Container execution + tracing
 │   ├── test_generator/           # LLM-generated tests + runner
@@ -243,7 +256,7 @@ validtr/
 
 ```
 1. Task Analyzer        → Classifies task, extracts requirements, generates testable assertions
-2. Recommendation Engine → Web search + MCP registry + LLM reasoning → StackRecommendation
+2. Recommendation Engine → Web search + MCP/skills/framework registries + LLM reasoning → StackRecommendation
 3. Stack Provisioner     → Generates Docker Compose, builds containers
 4. Execution Engine      → Runs task in container, captures traces and artifacts
 5. Test Generator        → LLM generates tests from task spec + output (never sees agent reasoning)
