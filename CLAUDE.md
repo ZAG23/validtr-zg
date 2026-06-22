@@ -43,16 +43,19 @@ validtr-engine/                 Python FastAPI engine
   api/                          server.py, routes/{run,mcp,config}.py
   orchestrator.py               top-level pipeline entry point (run_task())
   analyzer/                     TaskAnalyzer — LLM call producing a TaskDefinition
-  recommender/                  RecommendationEngine — web search + MCP/skills registry + LLM reasoning
+  recommender/                  RecommendationEngine — web search + MCP/skills/framework registry + LLM reasoning
+                                 (skill_scanner.py: optional SkillSpector risk scan, soft-import)
   provisioner/                  ComposeGenerator, Dockerfile templates
   executor/                     ExecutionEngine — Docker Compose (with MCP sidecars) or direct LLM fast-path
   test_generator/                generates + runs pytest tests from task spec (never sees agent trace)
   scorer/                       ScoringEngine -> code_scorer.py (only code-task scorer exists)
-  retry/                        RetryController, analysis.py
-  providers/                    base.py (LLMProvider ABC) + anthropic.py, openai.py, gemini.py, pricing.py, usage.py
+                                 (context_compressor.py: optional headroom compression, soft-import)
+  retry/                        RetryController, analysis.py (model upgrade path now from providers/model_catalog.py)
+  providers/                    base.py (LLMProvider ABC) + anthropic.py, openai.py, gemini.py, pricing.py, usage.py,
+                                 model_catalog.py (cascadeflow-backed live model registry, soft-import)
   models/                       Pydantic models: task, stack, result, test_result, score, projection
   estimator/                     harness token/cost projection (most actively developed subsystem)
-  tests/                        pytest suite, ~17 files, one per subsystem
+  tests/                        pytest suite, ~21 files, one per subsystem
 
 validtr-ui/                    React 19 + TS, Vite, Tailwind, Zustand, Recharts
   src/{api,components,hooks,pages,store,styles,lib}
