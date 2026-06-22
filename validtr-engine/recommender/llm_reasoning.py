@@ -12,6 +12,7 @@ from models.stack import (
 )
 from models.task import TaskDefinition
 from providers.base import LLMProvider, Message
+from providers.model_catalog import format_for_prompt
 from recommender.prompts import RECOMMENDATION_SYSTEM, RECOMMENDATION_USER
 
 logger = logging.getLogger(__name__)
@@ -54,6 +55,7 @@ class LLMReasoningEngine:
                 content=RECOMMENDATION_USER.format(
                     task_definition=task.model_dump_json(indent=2),
                     web_results=json.dumps(web_results, indent=2) if web_results else "No results",
+                    available_models=format_for_prompt(),
                     mcp_servers=json.dumps(mcp_servers, indent=2) if mcp_servers else "No results",
                     available_skills=skills_text,
                     preferred_provider=preferred_provider or "none (choose the best)",

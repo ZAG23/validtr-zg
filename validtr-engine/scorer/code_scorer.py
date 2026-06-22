@@ -8,6 +8,7 @@ from models.score import DimensionScore, ScoreResult
 from models.task import TaskDefinition
 from models.test_result import TestSuiteResult
 from providers.base import LLMProvider, Message
+from scorer.context_compressor import compress_text
 from scorer.prompts import COMPLETENESS_JUDGE_SYSTEM, COMPLETENESS_JUDGE_USER
 
 logger = logging.getLogger(__name__)
@@ -158,7 +159,11 @@ class CodeScorer:
 
 
 def _summarize_artifacts_for_judge(artifacts: dict[str, str]) -> str:
-    """Bound artifact content so the completeness judge stays fast."""
+    """Bound artifact content so the completeness judge stays fast.
+
+    Tries headroom's semantic compression first (if enabled); falls back to blind
+    per-file truncation, which can cut a file off mid-function but always works.
+    """
     if not artifacts:
         return "No artifacts"
 
@@ -171,8 +176,16 @@ def _summarize_artifacts_for_judge(artifacts: dict[str, str]) -> str:
             break
 
         content = artifacts[name]
-        truncated = content[: min(_MAX_JUDGE_CHARS_PER_FILE, remaining)]
-        parts.append(f"\n--- {name} ---\n{truncated}\n")
-        total_chars += len(truncated)
+        per_file_limit = min(_MAX_JUDGE_CHARS_PER_FILE, remaining)
+
+        compressed = (
+            compress_text(content, model_limit=per_file_limit)
+            if len(content) > per_file_limit
+            else None
+        )
+        body = compressed if compressed is not None else content[:per_file_limit]
+
+        parts.append(f"\n--- {name} ---\n{body}\n")
+        total_chars += len(body)
 
     return "".join(parts) or "No artifacts"
