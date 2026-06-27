@@ -3,6 +3,7 @@
 Sources:
   - https://github.com/anthropics/skills
   - https://github.com/github/awesome-copilot
+  - https://github.com/phuryn/pm-skills
 
 Skills are fetched on first use, cached for 1 hour. No local curation needed.
 """
@@ -13,6 +14,8 @@ import time
 
 import httpx
 import yaml
+
+from recommender import skill_scanner
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +31,16 @@ CATALOGS = [
         "repo": "awesome-copilot",
         "skills_path": "skills",
         "source": "github-copilot",
+    },
+    {
+        # pm-skills nests SKILL.md files under per-plugin folders
+        # (e.g. "product-management/skills/foo/SKILL.md") rather than a single
+        # top-level skills/ dir, so skills_path is left None and any SKILL.md in
+        # the tree is matched (see _matches_skills_path below).
+        "owner": "phuryn",
+        "repo": "pm-skills",
+        "skills_path": None,
+        "source": "pm-skills",
     },
 ]
 
@@ -118,11 +131,11 @@ class SkillsRegistryClient:
 
                 tree = resp.json().get("tree", [])
 
-                # Find all SKILL.md files under skills_path/
+                # Find all SKILL.md files under skills_path/ (or anywhere, if unset)
                 skill_paths = [
                     item["path"]
                     for item in tree
-                    if item.get("path", "").startswith(f"{skills_path}/")
+                    if _matches_skills_path(item.get("path", ""), skills_path)
                     and item["path"].endswith("/SKILL.md")
                     and item.get("type") == "blob"
                 ]
@@ -171,8 +184,17 @@ class SkillsRegistryClient:
                 meta = meta or {}
                 meta.setdefault("name", folder_name)
 
+            name = meta.get("name", "")
+            scan_result = skill_scanner.scan(name, resp.text)
+            if skill_scanner.is_high_risk(scan_result):
+                logger.warning(
+                    "Dropping high-risk skill %s (%s): risk_score=%s",
+                    name, source, scan_result.get("risk_score"),
+                )
+                return None
+
             return {
-                "name": meta.get("name", ""),
+                "name": name,
                 "description": meta.get("description", ""),
                 "source": source,
                 "repo": f"{owner}/{repo}",
@@ -180,6 +202,17 @@ class SkillsRegistryClient:
             }
         except (httpx.HTTPError, Exception):
             return None
+
+
+def _matches_skills_path(path: str, skills_path: str | None) -> bool:
+    """True if a tree entry's path falls under the catalog's skills_path.
+
+    skills_path=None matches any path — needed for catalogs (e.g. pm-skills) that
+    nest SKILL.md files under per-plugin subdirectories instead of one shared root.
+    """
+    if skills_path is None:
+        return True
+    return path.startswith(f"{skills_path}/")
 
 
 def _parse_frontmatter(content: str) -> dict | None:

@@ -4,16 +4,10 @@ import logging
 
 from models.score import ScoreResult
 from models.stack import StackRecommendation
-from models.test_result import TestSuiteResult, TestStatus
+from models.test_result import TestStatus, TestSuiteResult
+from providers.model_catalog import upgrade_path as _model_upgrade_path
 
 logger = logging.getLogger(__name__)
-
-# Model upgrade paths
-MODEL_UPGRADES = {
-    "anthropic": ["claude-sonnet-4-6", "claude-opus-4-8"],
-    "openai": ["gpt-4o-mini", "gpt-4o", "o3"],
-    "gemini": ["gemini-2.5-flash", "gemini-2.5-pro"],
-}
 
 
 def analyze_failures(
@@ -103,7 +97,7 @@ def apply_adjustments(
 
         if action == "upgrade_model":
             provider = new_stack.llm.provider
-            models = MODEL_UPGRADES.get(provider, [])
+            models = _model_upgrade_path(provider)
             current_idx = -1
             for i, m in enumerate(models):
                 if m == new_stack.llm.model:

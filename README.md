@@ -19,6 +19,22 @@ An Agent Harness CLI tool that takes a natural language task description, recomm
 
 If the score falls below 95%, it iterates — adjusting the stack and retrying until the threshold is met or max retries are exhausted.
 
+## Contents
+
+- [Why validtr](#why-validtr)
+- [Prerequisites](#prerequisites)
+- [Quickstart](#quickstart)
+- [Usage](#usage)
+- [Docker Runtime Behavior](#docker-runtime-behavior)
+- [Web UI](#web-ui)
+- [Architecture](#architecture)
+- [Project Structure](#project-structure)
+- [Pipeline](#pipeline)
+- [Scoring](#scoring)
+- [Supported Providers](#supported-providers)
+- [How validtr Differs From an Eval Harness](#how-validtr-differs-from-an-eval-harness)
+- [License](#license)
+
 ## Why validtr
 
 - Recommends the best-fit stack for your task instead of hardcoding one provider/toolchain.
@@ -71,6 +87,17 @@ timeout: 300
 engine_addr: "http://127.0.0.1:4041"
 ```
 
+### Optional extras
+
+A few subsystems are soft dependencies — the engine runs fine without them and falls
+back to built-in defaults:
+
+| Extra | `pip install -e ".[...]"` | Enables | Opt-in env var |
+|---|---|---|---|
+| `cascade` | `cascade` | Live, cost-ordered model registry (replaces the static model list) | always on if installed |
+| `compress` | `compress` | Semantic artifact compression for the completeness judge (pulls in torch/transformers — heavy) | `VALIDTR_COMPRESS_ARTIFACTS=1` |
+| — | install [SkillSpector](https://github.com/NVIDIA/SkillSpector) separately (not on PyPI) onto the engine's `PYTHONPATH` | Drops high-risk skills before they're surfaced in recommendations | `VALIDTR_SCAN_SKILLS=1` |
+
 ### 4) Start the engine
 
 ```bash
@@ -91,14 +118,24 @@ uvicorn api.server:app --host 127.0.0.1 --port 4041
 
 ## Usage
 
+The examples below use `validtr` directly, assuming the built binary is on your `PATH`
+(e.g. `mv validtr /usr/local/bin/`, or `cd validtr-cli && go install .`). If you'd rather run
+the binary in place from the repo root, use `./validtr` instead.
+
 ### Run a task
 
 ```bash
 # Single provider (--model is required; validtr has no default model)
-./validtr run "Build a FastAPI web app with JWT auth" --provider anthropic --model claude-sonnet-4-6
+validtr run "Build a FastAPI web app with JWT auth" --provider anthropic --model claude-sonnet-4-6
 
 # Dry run — recommend a stack but don't execute
 validtr run "Automate PR code reviews" --provider anthropic --model claude-sonnet-4-6 --dry-run
+
+# Compare multiple providers on the same task
+# Note: --model is passed as-is to every provider in the list, so pick a model
+# name that's valid across all of them, or run --compare against one provider
+# with several API-compatible models.
+validtr run "Build a CLI in Go" --compare anthropic,openai --model gpt-4o
 
 # Override defaults
 validtr run "Build a CLI in Go" \
@@ -199,7 +236,9 @@ User's Machine
 └── External APIs
     ├── LLM APIs (Anthropic, OpenAI, Gemini)
     ├── Web Search (Tavily)
-    └── MCP Registries (mcp.so, Smithery)
+    ├── MCP Registries (mcp.so, Smithery)
+    ├── Skills catalogs (GitHub: anthropics/skills, awesome-copilot, pm-skills)
+    └── PyPI (model/framework freshness checks, optional cascadeflow registry)
 ```
 
 ## Project Structure
@@ -228,7 +267,7 @@ validtr/
 ├── validtr-engine/               # Python Engine
 │   ├── api/                      # FastAPI server + routes
 │   ├── analyzer/                 # Task classification + extraction
-│   ├── recommender/              # Web search + MCP registry + LLM reasoning
+│   ├── recommender/              # Web search + MCP/skills/framework registries + LLM reasoning
 │   ├── provisioner/              # Docker Compose generation + Dockerfiles
 │   ├── executor/                 # Container execution + tracing
 │   ├── test_generator/           # LLM-generated tests + runner
@@ -243,7 +282,7 @@ validtr/
 
 ```
 1. Task Analyzer        → Classifies task, extracts requirements, generates testable assertions
-2. Recommendation Engine → Web search + MCP registry + LLM reasoning → StackRecommendation
+2. Recommendation Engine → Web search + MCP/skills/framework registries + LLM reasoning → StackRecommendation
 3. Stack Provisioner     → Generates Docker Compose, builds containers
 4. Execution Engine      → Runs task in container, captures traces and artifacts
 5. Test Generator        → LLM generates tests from task spec + output (never sees agent reasoning)
@@ -270,24 +309,33 @@ Currently only Code tasks have a dedicated scorer. Other task types fall back to
 | OpenAI    | OPENAI_API_KEY
 | Gemini    | GOOGLE_API_KEY
 
-## How Validtr Differentiates From Evals
+## How validtr Differs From an Eval Harness
 
-Where it overlaps
+validtr's pipeline (analyze → recommend → execute → test → score → retry) resembles general
+guidance on building agent eval systems (e.g. Anthropic's published eval-harness practices), but
+the two solve different problems.
 
-  - Both are multi-turn agent evaluation pipelines.
-  - Both use automated grading (tests + rubric/model-based checks).
-  - Both care about traces/outcomes, not just final text output.
+**Where it overlaps**
 
-  Key differences
+- Both are multi-turn agent evaluation pipelines.
+- Both use automated grading (tests + rubric/model-based checks).
+- Both care about traces/outcomes, not just final text output.
 
-  - Scope: your app is an end-to-end local runner/recommender/provisioner (analyze → recommend → execute in Docker → generate tests → score → retry). Anthropic’s post is a framework for
-    building eval systems, not a single fixed product pipeline.
-  - Eval design maturity: Anthropic emphasizes eval harness design, multiple graders (code/model/human), capability vs regression suites, multiple trials per task, calibration. Your app is
-    currently a single-run operational pipeline with a fixed scoring structure and retry loop.
-  - Statistical rigor: Anthropic stresses repeated trials and suite-level metrics; your current flow appears mostly one-attempt-per-loop scoring (with retries for task completion), not formal
-    capability/regression benchmarking at suite scale.
-  - Human-in-the-loop: Anthropic explicitly includes human grading/calibration; your app is fully automated today.
-  - Primary goal: your tool is closer to “get best stack and deliver output now”; the Anthropic guidance is “measure agent quality/reliability over time”.
+**Key differences**
+
+- **Scope**: validtr is an end-to-end local runner/recommender/provisioner — a single fixed
+  pipeline, not a general framework for building eval systems.
+- **Eval design maturity**: general eval-harness guidance emphasizes multiple graders
+  (code/model/human), capability vs. regression suites, multiple trials per task, and calibration.
+  validtr is currently a single-run operational pipeline with a fixed scoring structure and retry
+  loop.
+- **Statistical rigor**: mature eval harnesses lean on repeated trials and suite-level metrics;
+  validtr's flow is one-attempt-per-loop scoring (with retries for task completion), not formal
+  capability/regression benchmarking at suite scale.
+- **Human-in-the-loop**: validtr is fully automated today, with no human grading or calibration
+  step.
+- **Primary goal**: validtr optimizes for "find the best stack and deliver output now," not
+  "measure agent quality/reliability over time."
 
 ## License
 

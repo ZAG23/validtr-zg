@@ -11,7 +11,8 @@ from models.stack import (
     StackRecommendation,
 )
 from models.test_result import SingleTestResult, TestStatus, TestSuiteResult
-from retry.analysis import MODEL_UPGRADES, analyze_failures, apply_adjustments
+from providers.model_catalog import upgrade_path
+from retry.analysis import analyze_failures, apply_adjustments
 from retry.controller import RetryController
 
 
@@ -303,9 +304,7 @@ class TestApplyAdjustments:
         assert "re_search: b" in new_stack.adjustment_notes
 
     def test_model_upgrades_map_structure(self):
-        assert "anthropic" in MODEL_UPGRADES
-        assert "openai" in MODEL_UPGRADES
-        assert "gemini" in MODEL_UPGRADES
-        for provider, models in MODEL_UPGRADES.items():
+        for provider in ("anthropic", "openai", "gemini"):
+            models = upgrade_path(provider)
             assert isinstance(models, list)
             assert len(models) >= 2, f"{provider} should have at least 2 models in upgrade path"

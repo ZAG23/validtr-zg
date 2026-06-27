@@ -25,6 +25,20 @@ dev = [
     "pytest-asyncio>=0.24",
     "ruff>=0.9.0",
 ]
+# Live model registry (deprecation flags, cost-ordered upgrade paths) — replaces the
+# hardcoded model list in retry/analysis.py and recommender/prompts.py when installed.
+cascade = [
+    "cascadeflow>=0.1.0",
+]
+# Semantic artifact compression for the completeness judge (scorer/context_compressor.py).
+# Pulls in torch/transformers/sentence-transformers — heavy, opt-in only, also gated by
+# VALIDTR_COMPRESS_ARTIFACTS=1 at runtime.
+compress = [
+    "headroom-ai[all]",
+]
+# NVIDIA SkillSpector is not published on PyPI; install it separately (see its README:
+# `make install`, git checkout, or Docker) onto this engine's PYTHONPATH, then set
+# VALIDTR_SCAN_SKILLS=1 to enable scanning in recommender/skill_scanner.py.
 
 [tool.hatch.build.targets.wheel]
 packages = [
